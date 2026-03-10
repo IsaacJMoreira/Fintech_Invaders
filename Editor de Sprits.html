@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>FabGL RGBA2222 Sprite Editor</title>
+    <title>FabGL Sprite Editor</title>
 
     <style>
       body {
@@ -43,7 +43,7 @@
 
       textarea {
         width: 100%;
-        height: 160px;
+        height: 200px;
         margin-top: 10px;
       }
 
@@ -61,21 +61,28 @@
     <h2>FabGL RGBA2222 Sprite Editor</h2>
 
     <div class="controls">
-      Grid:
+      Width
+      <input id="width" type="number" value="32" />
 
-      <select id="gridSize">
-        <option>8</option>
-        <option selected>16</option>
-        <option>32</option>
-        <option>64</option>
-      </select>
+      Height
+      <input id="height" type="number" value="32" />
 
-      Zoom:
+      Sprite W
+      <input id="spriteW" type="number" value="16" />
 
-      <input type="range" id="zoom" min="10" max="40" value="20" />
+      Sprite H
+      <input id="spriteH" type="number" value="16" />
+
+      Zoom
+      <input type="range" id="zoom" min="4" max="40" value="16" />
+
+      <button onclick="applySize()">Apply</button>
 
       <button onclick="clearSprite()">Clear</button>
-      <button onclick="exportCPP()">Export C++</button>
+
+      <button onclick="exportSheet()">Export Sheet</button>
+
+      <button onclick="exportFrames()">Export Frames</button>
 
       <input type="file" id="pngLoader" />
     </div>
@@ -92,17 +99,28 @@
 
         <canvas id="preview" width="256" height="256"></canvas>
 
-        <h3>C++ Array</h3>
+        <h3>Animation</h3>
 
-        <textarea id="cppInput"></textarea>
+        <canvas id="anim" width="128" height="128"></canvas>
 
-        <button onclick="importCPP()">Import Array</button>
+        <br />
+        Frame Speed
+        <input type="range" id="speed" min="50" max="500" value="150" />
+
+        <h3>C++ Output</h3>
+
+        <textarea id="cppOutput"></textarea>
       </div>
     </div>
 
     <script>
-      let size = 16;
-      let zoom = 20;
+      let width = 32;
+      let height = 32;
+
+      let spriteW = 16;
+      let spriteH = 16;
+
+      let zoom = 16;
 
       let pixels = [];
       let currentColor = { r: 3, g: 3, b: 3, a: 3 };
@@ -110,24 +128,28 @@
       let mouseDown = false;
 
       const grid = document.getElementById("grid");
+
       const preview = document.getElementById("preview");
       const ctx = preview.getContext("2d");
+
+      const anim = document.getElementById("anim");
+      const actx = anim.getContext("2d");
 
       function rgbaToCss(c) {
         return `rgba(${c.r * 85},${c.g * 85},${c.b * 85},${c.a / 3})`;
       }
 
-      function byteToRGBA(byte) {
-        return {
-          a: (byte >> 6) & 3,
-          b: (byte >> 4) & 3,
-          g: (byte >> 2) & 3,
-          r: byte & 3,
-        };
-      }
-
       function rgbaToByte(c) {
         return (c.a << 6) | (c.b << 4) | (c.g << 2) | c.r;
+      }
+
+      function byteToRGBA(b) {
+        return {
+          a: (b >> 6) & 3,
+          b: (b >> 4) & 3,
+          g: (b >> 2) & 3,
+          r: b & 3,
+        };
       }
 
       function buildPalette() {
@@ -156,15 +178,27 @@
         });
       }
 
+      function applySize() {
+        width = parseInt(widthInput.value);
+        height = parseInt(heightInput.value);
+
+        spriteW = parseInt(spriteWInput.value);
+        spriteH = parseInt(spriteHInput.value);
+
+        zoom = parseInt(document.getElementById("zoom").value);
+
+        buildGrid();
+      }
+
       function buildGrid() {
         grid.innerHTML = "";
 
-        grid.style.gridTemplateColumns = `repeat(${size},${zoom}px)`;
+        grid.style.gridTemplateColumns = `repeat(${width},${zoom}px)`;
 
         pixels = [];
 
-        for (let y = 0; y < size; y++)
-          for (let x = 0; x < size; x++) {
+        for (let y = 0; y < height; y++)
+          for (let x = 0; x < width; x++) {
             let p = { r: 0, g: 0, b: 0, a: 0 };
 
             pixels.push(p);
@@ -208,18 +242,42 @@
         ctx.fillStyle = "black";
         ctx.fillRect(0, 0, 256, 256);
 
-        let scale = 256 / size;
+        let sx = 256 / width;
+        let sy = 256 / height;
 
-        for (let y = 0; y < size; y++)
-          for (let x = 0; x < size; x++) {
-            let p = pixels[y * size + x];
+        for (let y = 0; y < height; y++)
+          for (let x = 0; x < width; x++) {
+            let p = pixels[y * width + x];
 
             if (p.a === 0) continue;
 
             ctx.fillStyle = rgbaToCss(p);
 
-            ctx.fillRect(x * scale, y * scale, scale, scale);
+            ctx.fillRect(x * sx, y * sy, sx, sy);
           }
+
+        drawGridOverlay();
+      }
+
+      function drawGridOverlay() {
+        let sx = 256 / width;
+        let sy = 256 / height;
+
+        ctx.strokeStyle = "rgba(255,255,255,0.25)";
+
+        for (let x = spriteW; x < width; x += spriteW) {
+          ctx.beginPath();
+          ctx.moveTo(x * sx, 0);
+          ctx.lineTo(x * sx, 256);
+          ctx.stroke();
+        }
+
+        for (let y = spriteH; y < height; y += spriteH) {
+          ctx.beginPath();
+          ctx.moveTo(0, y * sy);
+          ctx.lineTo(256, y * sy);
+          ctx.stroke();
+        }
       }
 
       function clearSprite() {
@@ -230,87 +288,120 @@
           p.a = 0;
         });
 
-        document.querySelectorAll(".pixel").forEach((p) => {
-          p.style.background = "black";
-        });
+        document
+          .querySelectorAll(".pixel")
+          .forEach((p) => (p.style.background = "black"));
 
         drawPreview();
       }
 
-      function exportCPP() {
-        let txt = "const uint8_t sprite[] = {\n";
+      function exportSheet() {
+        let txt = "const uint8_t sprite_sheet[] = {\n";
 
-        pixels.forEach((p, i) => {
-          let b = rgbaToByte(p);
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            let b = rgbaToByte(pixels[y * width + x]);
 
-          txt += "0x" + b.toString(16).padStart(2, "0");
+            txt += "0x" + b.toString(16).padStart(2, "0") + ",";
+          }
 
-          if (i < pixels.length - 1) txt += ",";
-
-          if ((i + 1) % 16 === 0) txt += "\n";
-        });
-
-        txt += "};";
-
-        document.getElementById("cppInput").value = txt;
-      }
-
-      function importCPP() {
-        let txt = document.getElementById("cppInput").value;
-
-        let nums = txt.match(/0x[0-9a-fA-F]+|\d+/g);
-
-        if (!nums) return;
-
-        let bytes = nums.map((v) => parseInt(v));
-
-        for (let i = 0; i < pixels.length && i < bytes.length; i++) {
-          let c = byteToRGBA(bytes[i]);
-
-          pixels[i] = c;
+          txt += "\n";
         }
 
-        let divs = document.querySelectorAll(".pixel");
+        txt += "};\n\n";
 
-        for (let i = 0; i < pixels.length; i++) {
-          divs[i].style.background = rgbaToCss(pixels[i]);
-        }
+        txt += `Bitmap sheet = Bitmap(${width},${height},sprite_sheet,PixelFormat::RGBA2222);`;
 
-        drawPreview();
+        cppOutput.value = txt;
       }
 
-      document.getElementById("gridSize").onchange = (e) => {
-        size = parseInt(e.target.value);
+      function exportFrames() {
+        let cols = Math.floor(width / spriteW);
+        let rows = Math.floor(height / spriteH);
 
-        buildGrid();
-      };
+        let txt = "";
 
-      document.getElementById("zoom").oninput = (e) => {
-        zoom = parseInt(e.target.value);
+        let frame = 0;
 
-        buildGrid();
-      };
+        for (let fy = 0; fy < rows; fy++)
+          for (let fx = 0; fx < cols; fx++) {
+            txt += `const uint8_t frame_${frame}[] = {\n`;
 
-      document.getElementById("pngLoader").onchange = (e) => {
+            for (let y = 0; y < spriteH; y++) {
+              for (let x = 0; x < spriteW; x++) {
+                let px = (fy * spriteH + y) * width + (fx * spriteW + x);
+
+                let b = rgbaToByte(pixels[px]);
+
+                txt += "0x" + b.toString(16).padStart(2, "0") + ",";
+              }
+
+              txt += "\n";
+            }
+
+            txt += "};\n";
+
+            txt += `Bitmap sprite_${frame} = Bitmap(${spriteW},${spriteH},frame_${frame},PixelFormat::RGBA2222);\n\n`;
+
+            frame++;
+          }
+
+        cppOutput.value = txt;
+      }
+
+      function animate() {
+        let cols = Math.floor(width / spriteW);
+        let rows = Math.floor(height / spriteH);
+
+        let frames = cols * rows;
+
+        let frame = 0;
+
+        setInterval(() => {
+          actx.fillStyle = "black";
+          actx.fillRect(0, 0, 128, 128);
+
+          let fx = frame % cols;
+          let fy = Math.floor(frame / cols);
+
+          let sx = 128 / spriteW;
+          let sy = 128 / spriteH;
+
+          for (let y = 0; y < spriteH; y++)
+            for (let x = 0; x < spriteW; x++) {
+              let px = (fy * spriteH + y) * width + (fx * spriteW + x);
+
+              let p = pixels[px];
+
+              if (p.a === 0) continue;
+
+              actx.fillStyle = rgbaToCss(p);
+
+              actx.fillRect(x * sx, y * sy, sx, sy);
+            }
+
+          frame = (frame + 1) % frames;
+        }, speed.value);
+      }
+
+      pngLoader.onchange = (e) => {
         let file = e.target.files[0];
-
-        if (!file) return;
 
         let img = new Image();
 
         img.onload = () => {
           let c = document.createElement("canvas");
 
-          c.width = size;
-          c.height = size;
+          c.width = width;
+          c.height = height;
 
           let cx = c.getContext("2d");
 
-          cx.drawImage(img, 0, 0, size, size);
+          cx.drawImage(img, 0, 0, width, height);
 
-          let data = cx.getImageData(0, 0, size, size).data;
+          let data = cx.getImageData(0, 0, width, height).data;
 
-          for (let i = 0; i < size * size; i++) {
+          for (let i = 0; i < width * height; i++) {
             let r = data[i * 4];
             let g = data[i * 4 + 1];
             let b = data[i * 4 + 2];
@@ -322,19 +413,32 @@
             pixels[i].a = a > 128 ? 3 : 0;
           }
 
-          let divs = document.querySelectorAll(".pixel");
-
-          for (let i = 0; i < pixels.length; i++)
-            divs[i].style.background = rgbaToCss(pixels[i]);
-
-          drawPreview();
+          updateGrid();
         };
 
         img.src = URL.createObjectURL(file);
       };
 
+      function updateGrid() {
+        let divs = document.querySelectorAll(".pixel");
+
+        for (let i = 0; i < pixels.length; i++)
+          divs[i].style.background = rgbaToCss(pixels[i]);
+
+        drawPreview();
+      }
+
+      let widthInput = document.getElementById("width");
+      let heightInput = document.getElementById("height");
+
+      let spriteWInput = document.getElementById("spriteW");
+      let spriteHInput = document.getElementById("spriteH");
+
       buildPalette();
+
       buildGrid();
+
+      animate();
     </script>
   </body>
 </html>
