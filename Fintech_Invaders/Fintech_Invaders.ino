@@ -54,7 +54,7 @@ struct GameScene : public Scene {
     for (int i = 0; i < dots; i++) {
 
       int color = random(0,3);
-      canvas.setPenColor(color ? (color == 1 ? Color::White : Color::Blue) : Color::BrightBlack);
+      canvas.setPenColor(color ? (color == 1 ? Color::White : Color::BrightBlack) : Color::BrightBlack);
 
       int x = random(PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - 1);
       int y = random(0, height);
