@@ -1,8 +1,8 @@
 #include "fabgl.h"
 #include "sprites.h"
 
-#define PLAY_AREA_LEFT   59
-#define PLAY_AREA_RIGHT  259
+#define PLAY_AREA_LEFT  81
+#define PLAY_AREA_RIGHT  237
 
 #define STAR0_COUNT 10
 #define STAR1_COUNT 7
@@ -18,11 +18,14 @@ fabgl::Canvas canvas(&DisplayController);
 
 struct GameScene : public Scene {
 
-  static const int SPRITESCOUNT = 22;
+  static const int SPRITESCOUNT = 23;
   fabgl::Sprite sprites[SPRITESCOUNT];
+
+
 
   fabgl::Sprite* player = &sprites[20];
   fabgl::Sprite* afterburner = &sprites[21];
+  fabgl::Sprite* LOGO_CAIXA = &sprites[22];
 
   int playerVelX = 0;
   int lastAnimUpdate = 0;
@@ -116,8 +119,14 @@ struct GameScene : public Scene {
     afterburner->addBitmap(&afterburner_2);
     afterburner->addBitmap(&afterburner_3);
 
+    // LOGO CAIXA
+
+    LOGO_CAIXA->addBitmap(&CAIXA);
+
+
     player->moveTo(152,170);
     afterburner->moveTo(156,173);
+    LOGO_CAIXA->moveTo(1, 1);
 
     // STARFIELD
     initStars();
@@ -125,6 +134,7 @@ struct GameScene : public Scene {
     // PLAYER + ENGINE
     addSprite(player);
     addSprite(afterburner);
+    addSprite(LOGO_CAIXA);
 
     DisplayController.setSprites(sprites, SPRITESCOUNT);
 
@@ -277,6 +287,7 @@ struct GameScene : public Scene {
     // UPDATE PLAYER
     updateSprite(player);
     updateSprite(afterburner);
+    updateSprite(LOGO_CAIXA);
 
     DisplayController.refreshSprites();
   }
@@ -303,7 +314,7 @@ void setup() {
   DisplayController.begin();
   DisplayController.setResolution(VGA_320x200_75Hz);
 
-  DisplayController.moveScreen(21,-1);
+  DisplayController.moveScreen(21,0);
 
   gameScene = new GameScene();
   gameScene->start();
