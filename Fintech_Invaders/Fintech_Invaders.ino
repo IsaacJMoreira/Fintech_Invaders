@@ -2,12 +2,17 @@
 #include "sprites.h"
 
 #define PLAY_AREA_LEFT  81
-#define PLAY_AREA_RIGHT  237
+#define PLAY_AREA_RIGHT 237
 
 #define STAR0_COUNT 10
 #define STAR1_COUNT 7
 #define STAR2_COUNT 3
-#define STAR_SPEED 8  // at the future, must be relative to spaceship speed.
+
+// PARALLAX STAR SPEEDS
+#define STAR_LAYER0_SPEED 8
+#define STAR_LAYER1_SPEED 4
+#define STAR_LAYER2_SPEED 2
+#define STAR_LAYER3_SPEED 1
 
 using fabgl::iclamp;
 
@@ -21,11 +26,11 @@ struct GameScene : public Scene {
   static const int SPRITESCOUNT = 23;
   fabgl::Sprite sprites[SPRITESCOUNT];
 
-
-
   fabgl::Sprite* player = &sprites[20];
   fabgl::Sprite* afterburner = &sprites[21];
   fabgl::Sprite* LOGO_CAIXA = &sprites[22];
+
+  float starY[STAR0_COUNT + STAR1_COUNT + STAR2_COUNT];
 
   int playerVelX = 0;
   int lastAnimUpdate = 0;
@@ -37,57 +42,104 @@ struct GameScene : public Scene {
 
 
 
+  // ----------- VERY FAR STATIC STARS -----------
+  void generateFarStars() {
+
+    int width  = PLAY_AREA_RIGHT - PLAY_AREA_LEFT - 1;
+    int height = DisplayController.getViewPortHeight();
+
+    int area = width * height;
+    int dots = area * 0.05;
+
+    for (int i = 0; i < dots; i++) {
+
+      int color = random(0,3);
+      canvas.setPenColor(color ? (color == 1 ? Color::White : Color::Blue) : Color::BrightBlack);
+
+      int x = random(PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - 1);
+      int y = random(0, height);
+
+      canvas.setPixel(x, y);
+    }
+  }
+
+
+
   // ----------- STAR INITIALIZATION -----------
   void initStars() {
 
     int index = 0;
 
-    // small stars
     for (int i = 0; i < STAR0_COUNT; i++) {
+
       sprites[index].addBitmap(&starBMP0);
+
       sprites[index].moveTo(
         random(PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - 3),
         random(0, DisplayController.getViewPortHeight())
       );
+
+      starY[index] = sprites[index].y;
+
       addSprite(&sprites[index]);
       index++;
     }
 
-    // medium stars
+
     for (int i = 0; i < STAR1_COUNT; i++) {
+
       sprites[index].addBitmap(&starBMP1);
+
       sprites[index].moveTo(
         random(PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - 5),
         random(0, DisplayController.getViewPortHeight())
       );
+
+      starY[index] = sprites[index].y;
+
       addSprite(&sprites[index]);
       index++;
     }
 
-    // large stars
+
     for (int i = 0; i < STAR2_COUNT; i++) {
+
       sprites[index].addBitmap(&starBMP2);
+
       sprites[index].moveTo(
         random(PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - 7),
         random(0, DisplayController.getViewPortHeight())
       );
+
+      starY[index] = sprites[index].y;
+
       addSprite(&sprites[index]);
       index++;
     }
   }
 
-  // ----------- STAR MOVEMENT -----------
+
+
+  // ----------- PARALLAX STAR MOVEMENT -----------
   void updateStars() {
 
-    int start = 0;
-    int end = STAR0_COUNT + STAR1_COUNT + STAR2_COUNT;
+    int totalStars = STAR0_COUNT + STAR1_COUNT + STAR2_COUNT;
 
-    for (int i = start; i < end; i++) {
+    for (int i = 0; i < totalStars; i++) {
 
-      sprites[i].y += STAR_SPEED;
+      float speed;
+
+      if (i < 5) speed = STAR_LAYER3_SPEED;
+      else if (i < 10) speed = STAR_LAYER2_SPEED;
+      else if (i < 15) speed = STAR_LAYER1_SPEED;
+      else speed = STAR_LAYER0_SPEED;
+
+      starY[i] += speed;
+      sprites[i].y = (int)starY[i];
 
       if (sprites[i].y >= DisplayController.getViewPortHeight()) {
 
+        starY[i] = 0;
         sprites[i].y = 0;
 
         sprites[i].x = random(
@@ -120,18 +172,14 @@ struct GameScene : public Scene {
     afterburner->addBitmap(&afterburner_3);
 
     // LOGO CAIXA
-
     LOGO_CAIXA->addBitmap(&CAIXA);
-
 
     player->moveTo(152,170);
     afterburner->moveTo(156,173);
     LOGO_CAIXA->moveTo(1, 1);
 
-    // STARFIELD
     initStars();
 
-    // PLAYER + ENGINE
     addSprite(player);
     addSprite(afterburner);
     addSprite(LOGO_CAIXA);
@@ -158,15 +206,8 @@ struct GameScene : public Scene {
       DisplayController.getViewPortHeight() - 1
     );
 
-    // STARFIELD BACKGROUND
-    canvas.setBrushColor(Color::Black);
 
-    canvas.fillRectangle(
-      PLAY_AREA_LEFT + 1,
-      0,
-      PLAY_AREA_RIGHT - 1,
-      DisplayController.getViewPortHeight() - 1
-    );
+    generateFarStars();
   }
 
 
@@ -193,7 +234,6 @@ struct GameScene : public Scene {
     }
 
 
-    // PLAYER MOVEMENT
     player->x += playerVelX;
 
     player->x = iclamp(
@@ -203,7 +243,6 @@ struct GameScene : public Scene {
     );
 
 
-    // PLAYER ANIMATION
     if (rightPressed) {
 
       if (!rightHeld) {
@@ -246,7 +285,6 @@ struct GameScene : public Scene {
 
 
 
-    // RETURN TO CENTER
     if (!leftPressed && !rightPressed) {
 
       if (updateCount - lastAnimUpdate >= 4) {
@@ -262,7 +300,6 @@ struct GameScene : public Scene {
 
 
 
-    // AFTERBURNER ANIMATION
     if (updateCount % 4 == 0) {
 
       static int lastFrame = 0;
@@ -275,16 +312,13 @@ struct GameScene : public Scene {
     }
 
 
-    // ATTACH AFTERBURNER
     afterburner->x = player->x + 6;
     afterburner->y = player->y + (16 - 3);
 
 
-    // UPDATE STARFIELD
     updateStars();
 
 
-    // UPDATE PLAYER
     updateSprite(player);
     updateSprite(afterburner);
     updateSprite(LOGO_CAIXA);
@@ -294,8 +328,7 @@ struct GameScene : public Scene {
 
 
 
-  void collisionDetected(Sprite* spriteA, Sprite* spriteB, Point collisionPoint) override {
-  }
+  void collisionDetected(Sprite* spriteA, Sprite* spriteB, Point collisionPoint) override {}
 };
 
 
