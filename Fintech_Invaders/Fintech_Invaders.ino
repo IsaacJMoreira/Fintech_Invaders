@@ -1,7 +1,7 @@
 #include "fabgl.h"
 #include "sprites.h"
 
-#define PLAY_AREA_LEFT  81
+#define PLAY_AREA_LEFT 81
 #define PLAY_AREA_RIGHT 237
 
 #define STAR0_COUNT 10
@@ -23,12 +23,11 @@ fabgl::Canvas canvas(&DisplayController);
 
 struct GameScene : public Scene {
 
-  static const int SPRITESCOUNT = 23;
+  static const int SPRITESCOUNT = 22;
   fabgl::Sprite sprites[SPRITESCOUNT];
 
   fabgl::Sprite* player = &sprites[20];
   fabgl::Sprite* afterburner = &sprites[21];
-  fabgl::Sprite* LOGO_CAIXA = &sprites[22];
 
   float starY[STAR0_COUNT + STAR1_COUNT + STAR2_COUNT];
 
@@ -45,7 +44,7 @@ struct GameScene : public Scene {
   // ----------- VERY FAR STATIC STARS -----------
   void generateFarStars() {
 
-    int width  = PLAY_AREA_RIGHT - PLAY_AREA_LEFT - 1;
+    int width = PLAY_AREA_RIGHT - PLAY_AREA_LEFT - 1;
     int height = DisplayController.getViewPortHeight();
 
     int area = width * height;
@@ -53,7 +52,7 @@ struct GameScene : public Scene {
 
     for (int i = 0; i < dots; i++) {
 
-      int color = random(0,3);
+      int color = random(0, 3);
       canvas.setPenColor(color ? (color == 1 ? Color::White : Color::BrightBlack) : Color::BrightBlack);
 
       int x = random(PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - 1);
@@ -76,8 +75,7 @@ struct GameScene : public Scene {
 
       sprites[index].moveTo(
         random(PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - 3),
-        random(0, DisplayController.getViewPortHeight())
-      );
+        random(0, DisplayController.getViewPortHeight()));
 
       starY[index] = sprites[index].y;
 
@@ -92,8 +90,7 @@ struct GameScene : public Scene {
 
       sprites[index].moveTo(
         random(PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - 5),
-        random(0, DisplayController.getViewPortHeight())
-      );
+        random(0, DisplayController.getViewPortHeight()));
 
       starY[index] = sprites[index].y;
 
@@ -108,8 +105,7 @@ struct GameScene : public Scene {
 
       sprites[index].moveTo(
         random(PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - 7),
-        random(0, DisplayController.getViewPortHeight())
-      );
+        random(0, DisplayController.getViewPortHeight()));
 
       starY[index] = sprites[index].y;
 
@@ -144,8 +140,7 @@ struct GameScene : public Scene {
 
         sprites[i].x = random(
           PLAY_AREA_LEFT + 1,
-          PLAY_AREA_RIGHT - sprites[i].getWidth()
-        );
+          PLAY_AREA_RIGHT - sprites[i].getWidth());
       }
 
       updateSprite(&sprites[i]);
@@ -171,42 +166,47 @@ struct GameScene : public Scene {
     afterburner->addBitmap(&afterburner_2);
     afterburner->addBitmap(&afterburner_3);
 
-    // LOGO CAIXA
-    LOGO_CAIXA->addBitmap(&CAIXA);
+    canvas.drawBitmap(0,0,&FINTECH_INVADERS);
 
-    player->moveTo(152,170);
-    afterburner->moveTo(156,173);
-    LOGO_CAIXA->moveTo(1, 1);
+    delay(10000);
+
+    canvas.drawBitmap(PLAY_AREA_LEFT, 0, &STARFIELD);
+
+
+    player->moveTo(152, 170);
+    afterburner->moveTo(156, 173);
+
 
     initStars();
 
     addSprite(player);
     addSprite(afterburner);
-    addSprite(LOGO_CAIXA);
 
     DisplayController.setSprites(sprites, SPRITESCOUNT);
 
     player->setFrame(2);
     afterburner->setFrame(0);
 
+    
+
 
     // SIDE PANELS
     canvas.setBrushColor(Color::White);
 
     canvas.fillRectangle(
-      0,0,
+      0, 0,
       PLAY_AREA_LEFT,
-      DisplayController.getViewPortHeight() - 1
-    );
+      DisplayController.getViewPortHeight() - 1);
 
     canvas.fillRectangle(
       PLAY_AREA_RIGHT,
       0,
       DisplayController.getViewPortWidth() - 1,
-      DisplayController.getViewPortHeight() - 1
-    );
+      DisplayController.getViewPortHeight() - 1);
 
+    
 
+    canvas.drawBitmap(1, 1, &CAIXA);
     generateFarStars();
   }
 
@@ -239,8 +239,7 @@ struct GameScene : public Scene {
     player->x = iclamp(
       player->x,
       PLAY_AREA_LEFT + 1,
-      PLAY_AREA_RIGHT - player->getWidth()
-    );
+      PLAY_AREA_RIGHT - player->getWidth());
 
 
     if (rightPressed) {
@@ -304,9 +303,9 @@ struct GameScene : public Scene {
 
       static int lastFrame = 0;
 
-      int newFrame = random(0,4);
+      int newFrame = random(0, 4);
 
-      lastFrame = (newFrame == lastFrame) ? random(0,4) : newFrame;
+      lastFrame = (newFrame == lastFrame) ? random(0, 4) : newFrame;
 
       afterburner->setFrame(lastFrame);
     }
@@ -321,7 +320,6 @@ struct GameScene : public Scene {
 
     updateSprite(player);
     updateSprite(afterburner);
-    updateSprite(LOGO_CAIXA);
 
     DisplayController.refreshSprites();
   }
@@ -341,13 +339,12 @@ void setup() {
 
   PS2Controller.begin(
     PS2Preset::KeyboardPort0,
-    KbdMode::GenerateVirtualKeys
-  );
+    KbdMode::GenerateVirtualKeys);
 
   DisplayController.begin();
   DisplayController.setResolution(VGA_320x200_75Hz);
 
-  DisplayController.moveScreen(21,0);
+  DisplayController.moveScreen(21, 0);
 
   gameScene = new GameScene();
   gameScene->start();

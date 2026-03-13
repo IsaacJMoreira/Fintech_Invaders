@@ -85,6 +85,11 @@
       <button onclick="exportFrames()">Export Frames</button>
 
       <input type="file" id="pngLoader" />
+
+      <label>
+        <input type="checkbox" id="ditherToggle" checked />
+        Dithering
+      </label>
     </div>
 
     <div class="container">
@@ -96,14 +101,13 @@
 
       <div>
         <h3>Preview</h3>
-
         <canvas id="preview" width="256" height="256"></canvas>
 
         <h3>Animation</h3>
-
         <canvas id="anim" width="128" height="128"></canvas>
 
         <br />
+
         Frame Speed
         <input type="range" id="speed" min="50" max="500" value="150" />
 
@@ -123,6 +127,7 @@
       let zoom = 16;
 
       let pixels = [];
+
       let currentColor = { r: 3, g: 3, b: 3, a: 3 };
 
       let mouseDown = false;
@@ -154,7 +159,6 @@
 
       function buildPalette() {
         let p = document.getElementById("palette");
-
         p.innerHTML = "";
 
         let colors = [];
@@ -167,9 +171,7 @@
 
         colors.forEach((c) => {
           let el = document.createElement("div");
-
           el.className = "color";
-
           el.style.background = rgbaToCss(c);
 
           el.onclick = () => (currentColor = c);
@@ -320,7 +322,6 @@
         let rows = Math.floor(height / spriteH);
 
         let txt = "";
-
         let frame = 0;
 
         for (let fy = 0; fy < rows; fy++)
@@ -399,19 +400,56 @@
 
           cx.drawImage(img, 0, 0, width, height);
 
-          let data = cx.getImageData(0, 0, width, height).data;
+          let image = cx.getImageData(0, 0, width, height);
+          let data = image.data;
 
-          for (let i = 0; i < width * height; i++) {
-            let r = data[i * 4];
-            let g = data[i * 4 + 1];
-            let b = data[i * 4 + 2];
-            let a = data[i * 4 + 3];
+          let useDither = document.getElementById("ditherToggle").checked;
 
-            pixels[i].r = Math.floor(r / 64);
-            pixels[i].g = Math.floor(g / 64);
-            pixels[i].b = Math.floor(b / 64);
-            pixels[i].a = a > 128 ? 3 : 0;
+          function distribute(x, y, er, eg, eb, f) {
+            if (x < 0 || x >= width || y < 0 || y >= height) return;
+
+            let i = (y * width + x) * 4;
+
+            data[i] += er * f;
+            data[i + 1] += eg * f;
+            data[i + 2] += eb * f;
           }
+
+          for (let y = 0; y < height; y++)
+            for (let x = 0; x < width; x++) {
+              let i = (y * width + x) * 4;
+
+              let r = data[i];
+              let g = data[i + 1];
+              let b = data[i + 2];
+              let a = data[i + 3];
+
+              let qr = Math.floor(r / 64);
+              let qg = Math.floor(g / 64);
+              let qb = Math.floor(b / 64);
+
+              let nr = qr * 85;
+              let ng = qg * 85;
+              let nb = qb * 85;
+
+              pixels[y * width + x].r = qr;
+              pixels[y * width + x].g = qg;
+              pixels[y * width + x].b = qb;
+              pixels[y * width + x].a = a > 128 ? 3 : 0;
+
+              if (!useDither) continue;
+
+              let er = r - nr;
+              let eg = g - ng;
+              let eb = b - nb;
+
+              let ditherStrength = 0.33;
+
+              distribute(x + 1, y, er, eg, eb, (7 / 16) * ditherStrength);
+              distribute(x - 1, y + 1, er, eg, eb, (3 / 16) * ditherStrength);
+              distribute(x, y + 1, er, eg, eb, (5 / 16) * ditherStrength);
+              distribute(x + 1, y + 1, er, eg, eb, (1 / 16) * ditherStrength);
+            }
 
           updateGrid();
         };
@@ -435,9 +473,7 @@
       let spriteHInput = document.getElementById("spriteH");
 
       buildPalette();
-
       buildGrid();
-
       animate();
     </script>
   </body>
