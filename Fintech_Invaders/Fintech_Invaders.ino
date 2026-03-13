@@ -14,6 +14,10 @@
 #define STAR_LAYER2_SPEED 2
 #define STAR_LAYER3_SPEED 1
 
+//PLAYER FIRE DEFINES
+#define PLAYER_FIRE_SPEED 4
+int playerFireSpeed = 0;
+
 using fabgl::iclamp;
 
 fabgl::VGAController DisplayController;
@@ -23,11 +27,12 @@ fabgl::Canvas canvas(&DisplayController);
 
 struct GameScene : public Scene {
 
-  static const int SPRITESCOUNT = 22;
+  static const int SPRITESCOUNT = 23;
   fabgl::Sprite sprites[SPRITESCOUNT];
 
   fabgl::Sprite* player = &sprites[20];
   fabgl::Sprite* afterburner = &sprites[21];
+  fabgl::Sprite* playerFire = &sprites[22];
 
   float starY[STAR0_COUNT + STAR1_COUNT + STAR2_COUNT];
 
@@ -166,28 +171,36 @@ struct GameScene : public Scene {
     afterburner->addBitmap(&afterburner_2);
     afterburner->addBitmap(&afterburner_3);
 
-    canvas.drawBitmap(0,0,&FINTECH_INVADERS);
+    // PLAYER FIRE
 
-    delay(10000);
+    playerFire->addBitmap(&PLAYER_FIRE);
+    playerFire->visible = false;
+
+    canvas.drawBitmap(0, 0, &FINTECH_INVADERS);
+
+    delay(1000);
 
     canvas.drawBitmap(PLAY_AREA_LEFT, 0, &STARFIELD);
 
 
     player->moveTo(152, 170);
-    afterburner->moveTo(156, 173);
+    afterburner->moveTo(156, 170 + 14);
+    playerFire->moveTo(152 + 3, 170 - 3);
 
 
     initStars();
 
     addSprite(player);
     addSprite(afterburner);
+    addSprite(playerFire);
 
     DisplayController.setSprites(sprites, SPRITESCOUNT);
 
     player->setFrame(2);
     afterburner->setFrame(0);
+    playerFire->setFrame(0);
 
-    
+
 
 
     // SIDE PANELS
@@ -204,15 +217,21 @@ struct GameScene : public Scene {
       DisplayController.getViewPortWidth() - 1,
       DisplayController.getViewPortHeight() - 1);
 
-    
+
 
     canvas.drawBitmap(1, 1, &CAIXA);
     generateFarStars();
   }
 
 
+  bool playerFired = false;
 
+  int playerFire_x = player->x + 3;
+  int playerFire_y = player->y - 3;
+
+  ///////////////////////////////////////////////////////////////////
   void update(int updateCount) override {
+
 
     auto keyboard = PS2Controller.keyboard();
     playerVelX = 0;
@@ -230,6 +249,16 @@ struct GameScene : public Scene {
       else if (keyboard->isVKDown(fabgl::VK_RIGHT)) {
         playerVelX = 2;
         rightPressed = true;
+      }
+
+      if (keyboard->isVKDown((fabgl::VK_SPACE)) && !playerFired) {
+        playerFire->visible = true;
+        playerFired = true;
+        playerFireSpeed = PLAYER_FIRE_SPEED;
+        playerFire_x = player->x + 3;
+        playerFire_y = player->y - 3;
+        playerFire->moveTo(playerFire_x, playerFire_y);
+   
       }
     }
 
@@ -312,7 +341,21 @@ struct GameScene : public Scene {
 
 
     afterburner->x = player->x + 6;
-    afterburner->y = player->y + (16 - 3);
+    //afterburner->y = player->y + (16 - 3);
+
+
+
+    if ((playerFire->y <= 0) && playerFired) {
+      playerFireSpeed = 0;
+      playerFired = false;
+      playerFire->visible = false;
+      playerFire_x = player->x + 3;
+      playerFire_y = player->y - 3;
+    } else if (playerFired) {
+      playerFire->y -= playerFireSpeed;
+      playerFire->x = playerFire_x;
+    }
+
 
 
     updateStars();
@@ -320,6 +363,7 @@ struct GameScene : public Scene {
 
     updateSprite(player);
     updateSprite(afterburner);
+    updateSprite(playerFire);
 
     DisplayController.refreshSprites();
   }
