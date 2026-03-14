@@ -1,8 +1,9 @@
 #include "fabgl.h"
 #include "sprites.h"
 
-#define PLAY_AREA_LEFT 81
-#define PLAY_AREA_RIGHT 237
+#define PLAY_AREA_LEFT 79
+#define PLAY_AREA_RIGHT 239
+#define PLAYER_AREA_LANES 5
 
 //STARS
 
@@ -22,7 +23,7 @@
 #define STAR_LAYER3_SPEED 1
 
 //PLAYER FIRE DEFINES
-#define PLAYER_FIRE_SPEED 1
+#define PLAYER_FIRE_SPEED 4
 int playerFireSpeed = 0;
 
 using fabgl::iclamp;
@@ -45,6 +46,12 @@ enum SpriteType {
 
 
 struct GameScene : public Scene {
+
+  bool gameOver = false;
+
+  int asteroidSpeed[ASTEROID_COUNT];
+  bool asteroidActive[ASTEROID_COUNT];
+  int nextAsteroidSpawn = 0;
 
 
 
@@ -221,19 +228,16 @@ struct GameScene : public Scene {
     for (int i = 0; i < ASTEROID_COUNT; i++) {
 
       asteroids[i]->addBitmap(&ASTEROID);
-
       asteroids[i]->addBitmap(&EXPLOSION_0);
       asteroids[i]->addBitmap(&EXPLOSION_1);
       asteroids[i]->addBitmap(&EXPLOSION_2);
       asteroids[i]->addBitmap(&EXPLOSION_3);
 
-
-      asteroids[i]->moveTo(
-        random(PLAY_AREA_LEFT + 10, PLAY_AREA_RIGHT - 20),
-        random(20, 120));
+      asteroids[i]->moveTo(-100, -100);  // start hidden
+      asteroidActive[i] = false;
+      asteroidSpeed[i] = random(1, 3);
 
       addSprite(asteroids[i]);
-
       spriteType[23 + i] = TYPE_ASTEROID;
     }
 
@@ -286,9 +290,7 @@ struct GameScene : public Scene {
       0,
       DisplayController.getViewPortWidth() - 1,
       DisplayController.getViewPortHeight() - 1);
-
-
-
+      
     canvas.drawBitmap(1, 1, &CAIXA);
     generateFarStars();
   }
@@ -301,6 +303,9 @@ struct GameScene : public Scene {
 
   ///////////////////////////////////////////////////////////////////
   void update(int updateCount) override {
+
+    if (gameOver)
+      return;
 
     currentUpdateCount = updateCount;
 
@@ -444,21 +449,37 @@ struct GameScene : public Scene {
 
           } else {
 
-            // respawn asteroid
             asteroidExploding[i] = false;
             asteroidExplosionFrame[i] = 0;
 
-            asteroids[i]->setFrame(0);
+            asteroidActive[i] = false;
 
-            asteroids[i]->moveTo(
-              random(PLAY_AREA_LEFT + 10, PLAY_AREA_RIGHT - 20),
-              random(10, 80));
+            asteroids[i]->moveTo(-100, -100);
           }
         }
       }
     }
 
+    if (!gameOver) {
 
+      if (updateCount % 40 == 0)
+        spawnAsteroid();
+
+      for (int i = 0; i < ASTEROID_COUNT; i++) {
+
+        if (asteroidActive[i] && !asteroidExploding[i]) {
+
+          asteroids[i]->y += asteroidSpeed[i];
+
+          if (asteroids[i]->y > DisplayController.getViewPortHeight()) {
+
+            asteroidActive[i] = false;
+
+            asteroids[i]->moveTo(-100, -100);  // hide
+          }
+        }
+      }
+    }
 
     updateStars();
 
@@ -477,6 +498,7 @@ struct GameScene : public Scene {
 
 
 
+
   void collisionDetected(Sprite* spriteA, Sprite* spriteB, Point collisionPoint) override {
 
     int indexA = spriteA - sprites;
@@ -484,6 +506,15 @@ struct GameScene : public Scene {
 
     SpriteType typeA = spriteType[indexA];
     SpriteType typeB = spriteType[indexB];
+
+    if (
+      (typeA == TYPE_PLAYER && typeB == TYPE_ASTEROID) || (typeB == TYPE_PLAYER && typeA == TYPE_ASTEROID)) {
+
+      gameOver = true;
+
+      canvas.setPenColor(Color::White);
+      canvas.drawText(120, 100, "GAME OVER");
+    }
 
     if (
       (typeA == TYPE_PLAYER_FIRE && typeB == TYPE_ASTEROID) || (typeB == TYPE_PLAYER_FIRE && typeA == TYPE_ASTEROID)) {
@@ -505,6 +536,28 @@ struct GameScene : public Scene {
           playerFireSpeed = 0;
           break;
         }
+      }
+    }
+  }
+
+  void spawnAsteroid() {
+
+    for (int i = 0; i < ASTEROID_COUNT; i++) {
+
+      if (!asteroidActive[i] && !asteroidExploding[i]) {
+
+        int lane = random(0, PLAYER_AREA_LANES);
+
+        asteroids[i]->moveTo(
+          lane * 32 + PLAY_AREA_LEFT,
+          -16);
+
+        asteroids[i]->setFrame(0);
+
+        asteroidActive[i] = true;
+        asteroidSpeed[i] = random(1, 3);
+
+        break;
       }
     }
   }
