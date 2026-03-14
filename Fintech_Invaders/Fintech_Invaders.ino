@@ -4,9 +4,16 @@
 #define PLAY_AREA_LEFT 81
 #define PLAY_AREA_RIGHT 237
 
+//STARS
+
 #define STAR0_COUNT 10
 #define STAR1_COUNT 7
 #define STAR2_COUNT 3
+
+//ASTEROIDS
+
+#define ASTEROID_COUNT 5
+#define EXPLOSION_FRAMES 4
 
 // PARALLAX STAR SPEEDS
 #define STAR_LAYER0_SPEED 8
@@ -15,7 +22,7 @@
 #define STAR_LAYER3_SPEED 1
 
 //PLAYER FIRE DEFINES
-#define PLAYER_FIRE_SPEED 4
+#define PLAYER_FIRE_SPEED 1
 int playerFireSpeed = 0;
 
 using fabgl::iclamp;
@@ -25,14 +32,43 @@ fabgl::PS2Controller PS2Controller;
 fabgl::Canvas canvas(&DisplayController);
 
 
+//SPRITE TYPES
+enum SpriteType {
+  TYPE_NONE = 0,
+  TYPE_PLAYER,
+  TYPE_PLAYER_FIRE,
+  TYPE_ASTEROID,
+  TYPE_ENEMY,
+  TYPE_ENEMY_FIRE,
+  TYPE_POWERUP
+};
+
+
 struct GameScene : public Scene {
 
-  static const int SPRITESCOUNT = 23;
-  fabgl::Sprite sprites[SPRITESCOUNT];
 
+
+  static const int SPRITESCOUNT = 35;
+  fabgl::Sprite sprites[SPRITESCOUNT];
+  SpriteType spriteType[SPRITESCOUNT];
+  int currentUpdateCount = 0;
   fabgl::Sprite* player = &sprites[20];
   fabgl::Sprite* afterburner = &sprites[21];
   fabgl::Sprite* playerFire = &sprites[22];
+
+
+  //ASTEROID
+  fabgl::Sprite* asteroids[ASTEROID_COUNT] = {
+    &sprites[23],
+    &sprites[24],
+    &sprites[25],
+    &sprites[26],
+    &sprites[27]
+  };
+
+  bool asteroidExploding[ASTEROID_COUNT] = { false };
+  int asteroidExplosionFrame[ASTEROID_COUNT] = { 0 };
+  int asteroidExplosionTimer[ASTEROID_COUNT] = { 0 };
 
   float starY[STAR0_COUNT + STAR1_COUNT + STAR2_COUNT];
 
@@ -43,7 +79,6 @@ struct GameScene : public Scene {
 
   GameScene()
     : Scene(SPRITESCOUNT, 20, DisplayController.getViewPortWidth(), DisplayController.getViewPortHeight()) {}
-
 
 
   // ----------- VERY FAR STATIC STARS -----------
@@ -158,12 +193,16 @@ struct GameScene : public Scene {
 
     canvas.clear();
 
+    spriteType[20] = TYPE_PLAYER;
+    spriteType[22] = TYPE_PLAYER_FIRE;
+
     // PLAYER BITMAPS
     player->addBitmap(&bitmap1);
     player->addBitmap(&bitmap2);
     player->addBitmap(&bitmap3);
     player->addBitmap(&bitmap4);
     player->addBitmap(&bitmap5);
+
 
     // AFTERBURNER
     afterburner->addBitmap(&afterburner_0);
@@ -176,31 +215,62 @@ struct GameScene : public Scene {
     playerFire->addBitmap(&PLAYER_FIRE);
     playerFire->visible = false;
 
+
+    // ASTEROID
+
+    for (int i = 0; i < ASTEROID_COUNT; i++) {
+
+      asteroids[i]->addBitmap(&ASTEROID);
+
+      asteroids[i]->addBitmap(&EXPLOSION_0);
+      asteroids[i]->addBitmap(&EXPLOSION_1);
+      asteroids[i]->addBitmap(&EXPLOSION_2);
+      asteroids[i]->addBitmap(&EXPLOSION_3);
+
+
+      asteroids[i]->moveTo(
+        random(PLAY_AREA_LEFT + 10, PLAY_AREA_RIGHT - 20),
+        random(20, 120));
+
+      addSprite(asteroids[i]);
+
+      spriteType[23 + i] = TYPE_ASTEROID;
+    }
+
+
+
+    //////////////////////////////////////////////////
+
     canvas.drawBitmap(0, 0, &FINTECH_INVADERS);
 
-    delay(1000);
+    delay(5000);
 
     canvas.drawBitmap(PLAY_AREA_LEFT, 0, &STARFIELD);
 
 
     player->moveTo(152, 170);
     afterburner->moveTo(156, 170 + 14);
-    playerFire->moveTo(152 + 3, 170 - 3);
+    playerFire->moveTo(152 + 2, 170 - 3);
+
 
 
     initStars();
 
     addSprite(player);
     addSprite(afterburner);
+    //afterburner->setCollisionEnabled(false);
     addSprite(playerFire);
 
+    // playerFire->setCollisionEnabled(true);
+
+
+
     DisplayController.setSprites(sprites, SPRITESCOUNT);
+
 
     player->setFrame(2);
     afterburner->setFrame(0);
     playerFire->setFrame(0);
-
-
 
 
     // SIDE PANELS
@@ -226,12 +296,13 @@ struct GameScene : public Scene {
 
   bool playerFired = false;
 
-  int playerFire_x = player->x + 3;
-  int playerFire_y = player->y - 3;
+  int playerFire_x = 0;
+  int playerFire_y = 0;
 
   ///////////////////////////////////////////////////////////////////
   void update(int updateCount) override {
 
+    currentUpdateCount = updateCount;
 
     auto keyboard = PS2Controller.keyboard();
     playerVelX = 0;
@@ -255,10 +326,9 @@ struct GameScene : public Scene {
         playerFire->visible = true;
         playerFired = true;
         playerFireSpeed = PLAYER_FIRE_SPEED;
-        playerFire_x = player->x + 3;
+        playerFire_x = player->x + 2;
         playerFire_y = player->y - 3;
         playerFire->moveTo(playerFire_x, playerFire_y);
-   
       }
     }
 
@@ -358,19 +428,86 @@ struct GameScene : public Scene {
 
 
 
-    updateStars();
 
+    for (int i = 0; i < ASTEROID_COUNT; i++) {
+
+      if (asteroidExploding[i]) {
+
+        if (updateCount - asteroidExplosionTimer[i] > 2) {
+
+          asteroidExplosionTimer[i] = updateCount;
+          asteroidExplosionFrame[i]++;
+
+          if (asteroidExplosionFrame[i] < EXPLOSION_FRAMES) {
+
+            asteroids[i]->setFrame(asteroidExplosionFrame[i]);
+
+          } else {
+
+            // respawn asteroid
+            asteroidExploding[i] = false;
+            asteroidExplosionFrame[i] = 0;
+
+            asteroids[i]->setFrame(0);
+
+            asteroids[i]->moveTo(
+              random(PLAY_AREA_LEFT + 10, PLAY_AREA_RIGHT - 20),
+              random(10, 80));
+          }
+        }
+      }
+    }
+
+
+
+    updateStars();
 
     updateSprite(player);
     updateSprite(afterburner);
-    updateSprite(playerFire);
+
+
+    updateSpriteAndDetectCollisions(player);
+    updateSpriteAndDetectCollisions(playerFire);
+
+    for (int i = 0; i < ASTEROID_COUNT; i++)
+      updateSpriteAndDetectCollisions(asteroids[i]);
 
     DisplayController.refreshSprites();
   }
 
 
 
-  void collisionDetected(Sprite* spriteA, Sprite* spriteB, Point collisionPoint) override {}
+  void collisionDetected(Sprite* spriteA, Sprite* spriteB, Point collisionPoint) override {
+
+    int indexA = spriteA - sprites;
+    int indexB = spriteB - sprites;
+
+    SpriteType typeA = spriteType[indexA];
+    SpriteType typeB = spriteType[indexB];
+
+    if (
+      (typeA == TYPE_PLAYER_FIRE && typeB == TYPE_ASTEROID) || (typeB == TYPE_PLAYER_FIRE && typeA == TYPE_ASTEROID)) {
+
+      Sprite* asteroid = (typeA == TYPE_ASTEROID) ? spriteA : spriteB;
+
+      for (int i = 0; i < ASTEROID_COUNT; i++) {
+
+        if (asteroids[i] == asteroid && !asteroidExploding[i]) {
+
+          asteroidExploding[i] = true;
+          asteroidExplosionFrame[i] = 1;
+          asteroidExplosionTimer[i] = currentUpdateCount;
+
+          asteroids[i]->setFrame(1);
+
+          playerFire->visible = false;
+          playerFired = false;
+          playerFireSpeed = 0;
+          break;
+        }
+      }
+    }
+  }
 };
 
 

@@ -129,7 +129,7 @@
       let pixels = [];
 
       let currentColor = { r: 3, g: 3, b: 3, a: 3 };
-
+      let transparentColor = null;
       let mouseDown = false;
 
       const grid = document.getElementById("grid");
@@ -171,10 +171,24 @@
 
         colors.forEach((c) => {
           let el = document.createElement("div");
+
           el.className = "color";
           el.style.background = rgbaToCss(c);
 
-          el.onclick = () => (currentColor = c);
+          el.onclick = () => {
+            currentColor = c;
+          };
+
+          // RIGHT CLICK = SET TRANSPARENT COLOR
+          el.oncontextmenu = (e) => {
+            e.preventDefault();
+            transparentColor = c;
+
+            document
+              .querySelectorAll(".color")
+              .forEach((x) => (x.style.outline = "none"));
+            el.style.outline = "3px solid cyan";
+          };
 
           p.appendChild(el);
         });
@@ -431,11 +445,25 @@
               let nr = qr * 85;
               let ng = qg * 85;
               let nb = qb * 85;
+              let pr = qr;
+              let pg = qg;
+              let pb = qb;
 
-              pixels[y * width + x].r = qr;
-              pixels[y * width + x].g = qg;
-              pixels[y * width + x].b = qb;
-              pixels[y * width + x].a = a > 128 ? 3 : 0;
+              let pa = 3;
+
+              if (
+                transparentColor &&
+                pr === transparentColor.r &&
+                pg === transparentColor.g &&
+                pb === transparentColor.b
+              ) {
+                pa = 0;
+              }
+
+              pixels[y * width + x].r = pr;
+              pixels[y * width + x].g = pg;
+              pixels[y * width + x].b = pb;
+              pixels[y * width + x].a = pa;
 
               if (!useDither) continue;
 
