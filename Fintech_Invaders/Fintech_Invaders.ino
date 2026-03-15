@@ -1,3 +1,4 @@
+
 #include "fabgl.h"
 #include "sprites.h"
 
@@ -50,16 +51,21 @@ enum GameState {
   GAME_OVER
 };
 
+int gameOverTime = 0;
+
 GameState currentGameState = GAME_INTRO;
 
 struct GameScene : public Scene {
+
+  bool playerExploding = false;
+  int playerExplosionFrame = 0;
+  int playerExplosionTimer = 0;
 
   void init() override {
     if (currentGameState == IN_GAME) {
       initGame();  // Initialize sprites and stars only if in game
     }
   }
-  bool gameOver = false;
 
   int asteroidSpeed[ASTEROID_COUNT];
   bool asteroidActive[ASTEROID_COUNT];
@@ -180,24 +186,30 @@ struct GameScene : public Scene {
     spriteType[20] = TYPE_PLAYER;
     spriteType[22] = TYPE_PLAYER_FIRE;
 
-    // PLAYER BITMAPS
+    // ---------- PLAYER BITMAPS ----------
     player->addBitmap(&bitmap1);
     player->addBitmap(&bitmap2);
     player->addBitmap(&bitmap3);
     player->addBitmap(&bitmap4);
     player->addBitmap(&bitmap5);
 
-    // AFTERBURNER
+    // ---------- PLAYER EXPLOSION FRAMES ----------
+    player->addBitmap(&EXPLOSION_0);
+    player->addBitmap(&EXPLOSION_1);
+    player->addBitmap(&EXPLOSION_2);
+    player->addBitmap(&EXPLOSION_3);
+
+    // ---------- AFTERBURNER ----------
     afterburner->addBitmap(&afterburner_0);
     afterburner->addBitmap(&afterburner_1);
     afterburner->addBitmap(&afterburner_2);
     afterburner->addBitmap(&afterburner_3);
 
-    // PLAYER FIRE
+    // ---------- PLAYER FIRE ----------
     playerFire->addBitmap(&PLAYER_FIRE);
     playerFire->visible = false;
 
-    // ASTEROIDS
+    // ---------- ASTEROIDS ----------
     for (int i = 0; i < ASTEROID_COUNT; i++) {
       asteroids[i]->addBitmap(&ASTEROID);
       asteroids[i]->addBitmap(&EXPLOSION_0);
@@ -213,7 +225,7 @@ struct GameScene : public Scene {
       spriteType[23 + i] = TYPE_ASTEROID;
     }
 
-    // SIDE PANELS
+    // ---------- SIDE PANELS ----------
     canvas.setBrushColor(Color::White);
     canvas.fillRectangle(0, 0, PLAY_AREA_LEFT, DisplayController.getViewPortHeight() - 1);
     canvas.fillRectangle(PLAY_AREA_RIGHT, 0, DisplayController.getViewPortWidth() - 1,
@@ -235,7 +247,7 @@ struct GameScene : public Scene {
 
     DisplayController.setSprites(sprites, SPRITESCOUNT);
 
-    player->setFrame(2);
+    player->setFrame(2);  // normal player frame
     afterburner->setFrame(0);
     playerFire->setFrame(0);
   }
@@ -247,7 +259,9 @@ struct GameScene : public Scene {
     auto keyboard = PS2Controller.keyboard();
 
     // ---------- GAME STATE HANDLING ----------
+
     if (currentGameState == GAME_INTRO) {
+      canvas.clear();
       canvas.drawBitmap(0, 0, &FINTECH_INVADERS);
 
       if (keyboard && keyboard->isKeyboardAvailable() && keyboard->isVKDown(fabgl::VK_SPACE)) {
@@ -259,134 +273,180 @@ struct GameScene : public Scene {
       return;
     }
 
-    if (currentGameState != IN_GAME || gameOver)
+
+    if (currentGameState == GAME_OVER) {
+      canvas.setPenColor(Color::Red);
+
+      if ((keyboard && keyboard->isKeyboardAvailable() && keyboard->isVKDown(fabgl::VK_SPACE)) || ((updateCount - gameOverTime) >= 750)) {
+        canvas.clear();
+        for (int i = 0; i < SPRITESCOUNT; i++)
+          sprites[i].visible = false;
+        currentGameState = GAME_INTRO;
+        return;
+      }
+
       return;
+    }
 
-    // ---------- PLAYER INPUT ----------
-    playerVelX = 0;
-    bool leftPressed = false;
-    bool rightPressed = false;
+    if (currentGameState == IN_GAME) {
+      // ---------- PLAYER INPUT ----------
+      playerVelX = 0;
+      bool leftPressed = false;
+      bool rightPressed = false;
 
-    if (keyboard && keyboard->isKeyboardAvailable()) {
-      if (keyboard->isVKDown(fabgl::VK_LEFT)) {
-        playerVelX = -2;
-        leftPressed = true;
-      } else if (keyboard->isVKDown(fabgl::VK_RIGHT)) {
-        playerVelX = 2;
-        rightPressed = true;
+      if (keyboard && keyboard->isKeyboardAvailable()) {
+        if (keyboard->isVKDown(fabgl::VK_LEFT)) {
+          playerVelX = -2;
+          leftPressed = true;
+        } else if (keyboard->isVKDown(fabgl::VK_RIGHT)) {
+          playerVelX = 2;
+          rightPressed = true;
+        }
+
+        if (keyboard->isVKDown(fabgl::VK_SPACE) && !playerFired) {
+          playerFire->visible = true;
+          playerFired = true;
+          playerFireSpeed = PLAYER_FIRE_SPEED;
+          playerFire_x = player->x + 2;
+          playerFire_y = player->y - 3;
+          playerFire->moveTo(playerFire_x, playerFire_y);
+        }
       }
 
-      if (keyboard->isVKDown(fabgl::VK_SPACE) && !playerFired) {
-        playerFire->visible = true;
-        playerFired = true;
-        playerFireSpeed = PLAYER_FIRE_SPEED;
-        playerFire_x = player->x + 2;
+      player->x += playerVelX;
+      player->x = iclamp(player->x, PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - player->getWidth());
+
+      // ---------- PLAYER ANIMATION ----------
+      if (rightPressed) {
+        if (!rightHeld) {
+          rightHeld = true;
+          lastAnimUpdate = updateCount;
+        }
+        if (updateCount - lastAnimUpdate >= 4) {
+          lastAnimUpdate = updateCount;
+          int frame = player->getFrameIndex();
+          if (frame < 4) player->setFrame(frame + 1);
+        }
+      } else rightHeld = false;
+
+      if (leftPressed) {
+        if (!leftHeld) {
+          leftHeld = true;
+          lastAnimUpdate = updateCount;
+        }
+        if (updateCount - lastAnimUpdate >= 4) {
+          lastAnimUpdate = updateCount;
+          int frame = player->getFrameIndex();
+          if (frame > 0) player->setFrame(frame - 1);
+        }
+      } else leftHeld = false;
+
+      if (!leftPressed && !rightPressed) {
+        if (updateCount - lastAnimUpdate >= 4) {
+          lastAnimUpdate = updateCount;
+          int frame = player->getFrameIndex();
+          if (frame < 2) player->setFrame(frame + 1);
+          if (frame > 2) player->setFrame(frame - 1);
+        }
+      }
+
+      // ---------- AFTERBURNER ----------
+      if (updateCount % 4 == 0) {
+        static int lastFrame = 0;
+        int newFrame = random(0, 4);
+        lastFrame = (newFrame == lastFrame) ? random(0, 4) : newFrame;
+        afterburner->setFrame(lastFrame);
+      }
+      afterburner->x = player->x + 6;
+
+      // ---------- PLAYER FIRE ----------
+      if ((playerFire->y <= 0) && playerFired) {
+        playerFireSpeed = 0;
+        playerFired = false;
+        playerFire->visible = false;
+        playerFire_x = player->x + 3;
         playerFire_y = player->y - 3;
-        playerFire->moveTo(playerFire_x, playerFire_y);
+      } else if (playerFired) {
+        playerFire->y -= playerFireSpeed;
+        playerFire->x = playerFire_x;
       }
-    }
 
-    player->x += playerVelX;
-    player->x = iclamp(player->x, PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - player->getWidth());
-
-    // ---------- PLAYER ANIMATION ----------
-    if (rightPressed) {
-      if (!rightHeld) {
-        rightHeld = true;
-        lastAnimUpdate = updateCount;
+      // ---------- ASTEROID EXPLOSIONS ----------
+      for (int i = 0; i < ASTEROID_COUNT; i++) {
+        if (asteroidExploding[i]) {
+          if (updateCount - asteroidExplosionTimer[i] > 2) {
+            asteroidExplosionTimer[i] = updateCount;
+            asteroidExplosionFrame[i]++;
+            if (asteroidExplosionFrame[i] < EXPLOSION_FRAMES) {
+              asteroids[i]->setFrame(asteroidExplosionFrame[i]);
+            } else {
+              asteroidExploding[i] = false;
+              asteroidExplosionFrame[i] = 0;
+              asteroidActive[i] = false;
+              asteroids[i]->moveTo(-100, -100);
+            }
+          }
+        }
       }
-      if (updateCount - lastAnimUpdate >= 4) {
-        lastAnimUpdate = updateCount;
-        int frame = player->getFrameIndex();
-        if (frame < 4) player->setFrame(frame + 1);
-      }
-    } else rightHeld = false;
 
-    if (leftPressed) {
-      if (!leftHeld) {
-        leftHeld = true;
-        lastAnimUpdate = updateCount;
-      }
-      if (updateCount - lastAnimUpdate >= 4) {
-        lastAnimUpdate = updateCount;
-        int frame = player->getFrameIndex();
-        if (frame > 0) player->setFrame(frame - 1);
-      }
-    } else leftHeld = false;
+      // ---------- PLAYER EXPLOSION ----------
+      if (playerExploding) {
+        if (afterburner->visible) {
+          for (int i = 0; i < ASTEROID_COUNT; i++) {
+            if (!asteroidExploding[i]) {
+              asteroidSpeed[i] = 0;
+              asteroidExploding[i] = true;
+              asteroidExplosionFrame[i] = 1;
+              asteroidExplosionTimer[i] = currentUpdateCount;
+              asteroids[i]->setFrame(1);
+            }
+          }
+        }
+        afterburner->visible = false;
 
-    if (!leftPressed && !rightPressed) {
-      if (updateCount - lastAnimUpdate >= 4) {
-        lastAnimUpdate = updateCount;
-        int frame = player->getFrameIndex();
-        if (frame < 2) player->setFrame(frame + 1);
-        if (frame > 2) player->setFrame(frame - 1);
-      }
-    }
-
-    // ---------- AFTERBURNER ----------
-    if (updateCount % 4 == 0) {
-      static int lastFrame = 0;
-      int newFrame = random(0, 4);
-      lastFrame = (newFrame == lastFrame) ? random(0, 4) : newFrame;
-      afterburner->setFrame(lastFrame);
-    }
-    afterburner->x = player->x + 6;
-
-    // ---------- PLAYER FIRE ----------
-    if ((playerFire->y <= 0) && playerFired) {
-      playerFireSpeed = 0;
-      playerFired = false;
-      playerFire->visible = false;
-      playerFire_x = player->x + 3;
-      playerFire_y = player->y - 3;
-    } else if (playerFired) {
-      playerFire->y -= playerFireSpeed;
-      playerFire->x = playerFire_x;
-    }
-
-    // ---------- ASTEROIDS ----------
-    for (int i = 0; i < ASTEROID_COUNT; i++) {
-      if (asteroidExploding[i]) {
-        if (updateCount - asteroidExplosionTimer[i] > 2) {
-          asteroidExplosionTimer[i] = updateCount;
-          asteroidExplosionFrame[i]++;
-          if (asteroidExplosionFrame[i] < EXPLOSION_FRAMES) {
-            asteroids[i]->setFrame(asteroidExplosionFrame[i]);
+        if (currentUpdateCount - playerExplosionTimer > 2) {
+          playerExplosionTimer = currentUpdateCount;
+          playerExplosionFrame++;
+          if (playerExplosionFrame < EXPLOSION_FRAMES) {
+            player->setFrame(playerExplosionFrame + 5);
           } else {
-            asteroidExploding[i] = false;
-            asteroidExplosionFrame[i] = 0;
+            playerExploding = false;
+            player->visible = false;
+            currentGameState = GAME_OVER;
+            gameOverTime = updateCount;
+            canvas.setPenColor(Color::White);
+            canvas.drawText(124, 100, "GAME OVER");
+          }
+        }
+      }
+
+      // ---------- SPAWN ASTEROIDS ----------
+      if (updateCount % 40 == 0) spawnAsteroid();
+
+      for (int i = 0; i < ASTEROID_COUNT; i++) {
+        if (asteroidActive[i] && !asteroidExploding[i]) {
+          asteroids[i]->y += asteroidSpeed[i];
+          if (asteroids[i]->y > DisplayController.getViewPortHeight()) {
             asteroidActive[i] = false;
             asteroids[i]->moveTo(-100, -100);
           }
         }
       }
+
+      // ---------- UPDATE STARS ----------
+      updateStars();
+
+      // ---------- UPDATE SPRITES ----------
+      updateSprite(player);
+      updateSprite(afterburner);
+      updateSpriteAndDetectCollisions(player);
+      updateSpriteAndDetectCollisions(playerFire);
+      for (int i = 0; i < ASTEROID_COUNT; i++)
+        updateSpriteAndDetectCollisions(asteroids[i]);
+
+      DisplayController.refreshSprites();
     }
-
-    if (updateCount % 40 == 0)
-      spawnAsteroid();
-
-    for (int i = 0; i < ASTEROID_COUNT; i++) {
-      if (asteroidActive[i] && !asteroidExploding[i]) {
-        asteroids[i]->y += asteroidSpeed[i];
-        if (asteroids[i]->y > DisplayController.getViewPortHeight()) {
-          asteroidActive[i] = false;
-          asteroids[i]->moveTo(-100, -100);
-        }
-      }
-    }
-
-    updateStars();
-
-    updateSprite(player);
-    updateSprite(afterburner);
-    updateSpriteAndDetectCollisions(player);
-    updateSpriteAndDetectCollisions(playerFire);
-    for (int i = 0; i < ASTEROID_COUNT; i++)
-      updateSpriteAndDetectCollisions(asteroids[i]);
-
-    DisplayController.refreshSprites();
   }
-
   // ---------- COLLISIONS ----------
   void collisionDetected(Sprite* spriteA, Sprite* spriteB, Point collisionPoint) override {
     int indexA = spriteA - sprites;
@@ -396,10 +456,24 @@ struct GameScene : public Scene {
     SpriteType typeB = spriteType[indexB];
 
     if ((typeA == TYPE_PLAYER && typeB == TYPE_ASTEROID) || (typeB == TYPE_PLAYER && typeA == TYPE_ASTEROID)) {
-      gameOver = true;
-      currentGameState = GAME_OVER;
-      canvas.setPenColor(Color::White);
-      canvas.drawText(120, 100, "GAME OVER");
+
+      Sprite* asteroid = (typeA == TYPE_ASTEROID) ? spriteA : spriteB;
+
+      // Trigger asteroid explosion
+      for (int i = 0; i < ASTEROID_COUNT; i++) {
+        if (asteroids[i] == asteroid && !asteroidExploding[i]) {
+          asteroidExploding[i] = true;
+          asteroidExplosionFrame[i] = 1;
+          asteroidExplosionTimer[i] = currentUpdateCount;
+          asteroids[i]->setFrame(1);
+          break;
+        }
+      }
+
+      // Trigger player explosion
+      playerExploding = true;
+      playerExplosionFrame = 1;
+      playerExplosionTimer = currentUpdateCount;
     }
 
     if ((typeA == TYPE_PLAYER_FIRE && typeB == TYPE_ASTEROID) || (typeB == TYPE_PLAYER_FIRE && typeA == TYPE_ASTEROID)) {
