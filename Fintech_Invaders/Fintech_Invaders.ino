@@ -355,7 +355,7 @@ struct GameScene : public Scene {
     if(!gameOver) MISSION_TIME++;
     float speedIncrease = SCREEN_SPEED / 30;
     ASTEROID_SPEED = 1 + speedIncrease;
-    PLAYER_FIRE_SPEED = 1 + SCORE/3;
+    PLAYER_FIRE_SPEED = 1 + SCORE/50;
     STAR_LAYER3_SPEED = 0.1 + speedIncrease;
     STAR_LAYER0_SPEED = (STAR_LAYER1_SPEED * 2);
     STAR_LAYER1_SPEED = (STAR_LAYER2_SPEED * 2);
@@ -376,7 +376,7 @@ struct GameScene : public Scene {
     canvas.setBrushColor(Color::Black);
     canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 9, 318, 15);
     canvas.selectFont(&fabgl::FONT_4x6);
-    canvas.setPenColor(Color::Yellow);
+    canvas.setPenColor(255,165,0);
     canvas.drawText(PLAY_AREA_RIGHT + 2, 10, "TEMPO");
     canvas.drawTextFmt(277, 10, "%010d", MISSION_TIME);
 
@@ -388,7 +388,7 @@ struct GameScene : public Scene {
     canvas.selectFont(&fabgl::FONT_4x6);
     canvas.setPenColor(Color::Red);
     canvas.drawText(PLAY_AREA_RIGHT + 2, 18, "VEL.PROJETIL");
-    canvas.drawTextFmt(297, 18, "%.2f", PLAYER_FIRE_SPEED);
+    canvas.drawTextFmt(297, 18, "%05.1f", PLAYER_FIRE_SPEED);
     ///////////////////////////////////////////////////////////////////////
     /////////////////////////// PROJECTILE SPEED //////////////////////////
     ///////////////////////////////////////////////////////////////////////
@@ -396,9 +396,9 @@ struct GameScene : public Scene {
     canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 25, 318, 31);
     canvas.selectFont(&fabgl::FONT_4x6);
     canvas.setPenColor(255,165,0);
-    canvas.drawText(PLAY_AREA_RIGHT + 2, 26, "VEL.NAVE CAIXA");
+    canvas.drawText(PLAY_AREA_RIGHT + 2, 26, "VEL.NAVE");
      //canvas.setPenColor(Color::Yellow);
-    canvas.drawTextFmt(297, 26, "%.2f", SCREEN_SPEED);
+    canvas.drawTextFmt(293, 26, "%06.1f", SCREEN_SPEED);
 
 
 
