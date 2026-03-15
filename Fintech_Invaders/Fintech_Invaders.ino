@@ -276,11 +276,13 @@ struct GameScene : public Scene {
 
     if (currentGameState == GAME_OVER) {
       canvas.setPenColor(Color::Red);
+      canvas.drawText(68, 180, "[ESPACO] PARA REINICIAR");
 
       if ((keyboard && keyboard->isKeyboardAvailable() && keyboard->isVKDown(fabgl::VK_SPACE)) || ((updateCount - gameOverTime) >= 750)) {
         canvas.clear();
         for (int i = 0; i < SPRITESCOUNT; i++)
           sprites[i].visible = false;
+        DisplayController.removeSprites();
         currentGameState = GAME_INTRO;
         return;
       }
