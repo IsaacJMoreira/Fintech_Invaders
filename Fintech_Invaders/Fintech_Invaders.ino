@@ -363,39 +363,39 @@ struct GameScene : public Scene {
     ///////////////////////////////////////////////////////////////////////
     //////////////////////////////// SCORE ////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    canvas.setBrushColor(Color::Black);
+    canvas.setBrushColor(Color::Blue);
     canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 1, 318, 7);
     canvas.selectFont(&fabgl::FONT_4x6);
-    canvas.setPenColor(Color::Green);
+    canvas.setPenColor(Color::BrightCyan);
     canvas.drawText(PLAY_AREA_RIGHT + 2, 2, "SCORE");
     canvas.drawTextFmt(297, 2, "%05d", SCORE);
 
     ///////////////////////////////////////////////////////////////////////
     //////////////////////////////// TEMPO ////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    canvas.setBrushColor(Color::Black);
+    canvas.setBrushColor(127,82,0);
     canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 9, 318, 15);
     canvas.selectFont(&fabgl::FONT_4x6);
-    canvas.setPenColor(255,165,0);
+    canvas.setPenColor(Color::BrightYellow);
     canvas.drawText(PLAY_AREA_RIGHT + 2, 10, "TEMPO");
     canvas.drawTextFmt(277, 10, "%010d", MISSION_TIME);
 
     ///////////////////////////////////////////////////////////////////////
     /////////////////////////// PROJECTILE SPEED //////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    canvas.setBrushColor(Color::Black);
+    canvas.setBrushColor(Color::Blue);
     canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 17, 318, 23);
     canvas.selectFont(&fabgl::FONT_4x6);
-    canvas.setPenColor(Color::Red);
+    canvas.setPenColor(Color::BrightCyan);
     canvas.drawText(PLAY_AREA_RIGHT + 2, 18, "VEL.PROJETIL");
     canvas.drawTextFmt(297, 18, "%05.1f", PLAYER_FIRE_SPEED);
     ///////////////////////////////////////////////////////////////////////
     /////////////////////////// PROJECTILE SPEED //////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    canvas.setBrushColor(Color::Black);
+    canvas.setBrushColor(127,82,0);
     canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 25, 318, 31);
     canvas.selectFont(&fabgl::FONT_4x6);
-    canvas.setPenColor(255,165,0);
+    canvas.setPenColor(Color::BrightYellow);
     canvas.drawText(PLAY_AREA_RIGHT + 2, 26, "VEL.NAVE");
      //canvas.setPenColor(Color::Yellow);
     canvas.drawTextFmt(293, 26, "%06.1f", SCREEN_SPEED);
