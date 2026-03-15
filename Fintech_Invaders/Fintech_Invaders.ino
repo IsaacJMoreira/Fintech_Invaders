@@ -14,7 +14,7 @@ using fabgl::iclamp;
 #define ASTEROID_COUNT 5
 #define EXPLOSION_FRAMES 4
 
-float     STAR_LAYER3_SPEED  = 1;
+float     STAR_LAYER3_SPEED  = 0;
 #define STAR_LAYER0_SPEED (STAR_LAYER1_SPEED * 2)
 #define STAR_LAYER1_SPEED (STAR_LAYER2_SPEED * 2)
 #define STAR_LAYER2_SPEED (STAR_LAYER3_SPEED * 2)
@@ -246,6 +246,8 @@ struct GameScene : public Scene {
   //////////////////////////////////////////////////////////////////////
 
   void init() override {
+
+    STAR_LAYER3_SPEED = 1;
 
     for (int i = 0; i < SPRITESCOUNT; i++)
       spriteType[i] = TYPE_NONE;
