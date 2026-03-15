@@ -350,12 +350,12 @@ struct GameScene : public Scene {
 
     if ((updateCount % 75) == 0 && !gameOver) {
       SCORE++;
-      SCREEN_SPEED++;
+      SCREEN_SPEED += 0.01;
     };
     if(!gameOver) MISSION_TIME++;
     float speedIncrease = SCREEN_SPEED / 30;
     ASTEROID_SPEED = 1 + speedIncrease;
-    PLAYER_FIRE_SPEED = 1 + SCORE/50;
+    PLAYER_FIRE_SPEED = 1 + (float)SCORE/50;
     STAR_LAYER3_SPEED = 0.1 + speedIncrease;
     STAR_LAYER0_SPEED = (STAR_LAYER1_SPEED * 2);
     STAR_LAYER1_SPEED = (STAR_LAYER2_SPEED * 2);
@@ -597,7 +597,7 @@ struct GameScene : public Scene {
       }
     }
 
-    if (updateCount % 40 == 0)
+    if (updateCount % (int)(40 - MISSION_TIME/1000) == 0)
       spawnAsteroid();
 
     for (int i = 0; i < ASTEROID_COUNT; i++) {
