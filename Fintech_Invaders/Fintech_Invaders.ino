@@ -3,6 +3,10 @@
 
 using fabgl::iclamp;
 
+int SCORE = 0;
+float SCREEN_SPEED = 0;
+int MISSION_TIME = 0;
+
 #define PLAY_AREA_LEFT 79
 #define PLAY_AREA_RIGHT 239
 #define PLAYER_AREA_LANES 5
@@ -11,16 +15,16 @@ using fabgl::iclamp;
 #define STAR1_COUNT 7
 #define STAR2_COUNT 3
 
+float ASTEROID_SPEED = 1;
 #define ASTEROID_COUNT 5
 #define EXPLOSION_FRAMES 4
 
-float     STAR_LAYER3_SPEED  = 0;
-#define STAR_LAYER0_SPEED (STAR_LAYER1_SPEED * 2)
-#define STAR_LAYER1_SPEED (STAR_LAYER2_SPEED * 2)
-#define STAR_LAYER2_SPEED (STAR_LAYER3_SPEED * 2)
+float STAR_LAYER3_SPEED = 0.1;
+float STAR_LAYER2_SPEED = (STAR_LAYER3_SPEED * 2);
+float STAR_LAYER1_SPEED = (STAR_LAYER2_SPEED * 2);
+float STAR_LAYER0_SPEED = (STAR_LAYER1_SPEED * 2);
 
-
-#define PLAYER_FIRE_SPEED 4
+float PLAYER_FIRE_SPEED = 1;
 
 enum GameState {
   INTRO_SCREEN,
@@ -42,11 +46,15 @@ fabgl::Canvas canvas(&DisplayController);
 
 struct IntroScene : public Scene {
 
+
+
   IntroScene()
     : Scene(0, 20, 320, 200) {}
 
   void init() override {
-
+    SCORE = 0;
+    SCREEN_SPEED = 0;
+    MISSION_TIME = 0;
     canvas.clear();
     canvas.drawBitmap(0, 0, &FINTECH_INVADERS);
   }
@@ -297,7 +305,7 @@ struct GameScene : public Scene {
 
       asteroidExplosionFrame[i] = 0;
 
-      asteroidSpeed[i] = random(1, 3);
+      asteroidSpeed[i] = ASTEROID_SPEED;
 
       addSprite(asteroids[i]);
 
@@ -339,10 +347,66 @@ struct GameScene : public Scene {
 
     currentUpdateCount = updateCount;
 
+
+    if ((updateCount % 75) == 0 && !gameOver) {
+      SCORE++;
+      SCREEN_SPEED++;
+    };
+    if(!gameOver) MISSION_TIME++;
+    float speedIncrease = SCREEN_SPEED / 30;
+    ASTEROID_SPEED = 1 + speedIncrease;
+    PLAYER_FIRE_SPEED = 1 + SCORE/3;
+    STAR_LAYER3_SPEED = 0.1 + speedIncrease;
+    STAR_LAYER0_SPEED = (STAR_LAYER1_SPEED * 2);
+    STAR_LAYER1_SPEED = (STAR_LAYER2_SPEED * 2);
+    STAR_LAYER2_SPEED = (STAR_LAYER3_SPEED * 2);
+    ///////////////////////////////////////////////////////////////////////
+    //////////////////////////////// SCORE ////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    canvas.setBrushColor(Color::Black);
+    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 1, 318, 7);
+    canvas.selectFont(&fabgl::FONT_4x6);
+    canvas.setPenColor(Color::Green);
+    canvas.drawText(PLAY_AREA_RIGHT + 2, 2, "SCORE");
+    canvas.drawTextFmt(297, 2, "%05d", SCORE);
+
+    ///////////////////////////////////////////////////////////////////////
+    //////////////////////////////// TEMPO ////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    canvas.setBrushColor(Color::Black);
+    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 9, 318, 15);
+    canvas.selectFont(&fabgl::FONT_4x6);
+    canvas.setPenColor(Color::Yellow);
+    canvas.drawText(PLAY_AREA_RIGHT + 2, 10, "TEMPO");
+    canvas.drawTextFmt(277, 10, "%010d", MISSION_TIME);
+
+    ///////////////////////////////////////////////////////////////////////
+    /////////////////////////// PROJECTILE SPEED //////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    canvas.setBrushColor(Color::Black);
+    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 17, 318, 23);
+    canvas.selectFont(&fabgl::FONT_4x6);
+    canvas.setPenColor(Color::Red);
+    canvas.drawText(PLAY_AREA_RIGHT + 2, 18, "VEL.PROJETIL");
+    canvas.drawTextFmt(297, 18, "%.2f", PLAYER_FIRE_SPEED);
+    ///////////////////////////////////////////////////////////////////////
+    /////////////////////////// PROJECTILE SPEED //////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    canvas.setBrushColor(Color::Black);
+    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 25, 318, 31);
+    canvas.selectFont(&fabgl::FONT_4x6);
+    canvas.setPenColor(255,165,0);
+    canvas.drawText(PLAY_AREA_RIGHT + 2, 26, "VEL.NAVE CAIXA");
+     //canvas.setPenColor(Color::Yellow);
+    canvas.drawTextFmt(297, 26, "%.2f", SCREEN_SPEED);
+
+
+
     auto keyboard = PS2Controller.keyboard();
 
     if (gameOver) {
 
+      canvas.selectFont(&fabgl::FONT_8x8);
       canvas.setPenColor(Color::Red);
       canvas.drawText(124, 100, "GAME OVER");
 
@@ -416,9 +480,6 @@ struct GameScene : public Scene {
           player->visible = false;
 
           gameOver = true;
-
-          canvas.setPenColor(Color::White);
-          canvas.drawText(124, 100, "GAME OVER");
         }
       }
     }
@@ -585,6 +646,9 @@ struct GameScene : public Scene {
       Sprite* asteroid = (typeA == TYPE_ASTEROID) ? spriteA : spriteB;
 
       STAR_LAYER3_SPEED = 0;
+
+      playerFire->visible = false;
+
       // trigger asteroid explosion
       for (int i = 0; i < ASTEROID_COUNT; i++) {
         asteroidSpeed[i] = 0;
@@ -610,6 +674,8 @@ struct GameScene : public Scene {
     if ((typeA == TYPE_PLAYER_FIRE && typeB == TYPE_ASTEROID) || (typeB == TYPE_PLAYER_FIRE && typeA == TYPE_ASTEROID)) {
 
       Sprite* asteroid = (typeA == TYPE_ASTEROID) ? spriteA : spriteB;
+
+      if (SCORE >= 10) SCORE -= 10;
 
       for (int i = 0; i < ASTEROID_COUNT; i++) {
 
@@ -648,7 +714,7 @@ struct GameScene : public Scene {
 
         asteroidActive[i] = true;
 
-        asteroidSpeed[i] = random(1, 3);
+        asteroidSpeed[i] = random(0, 3) + ASTEROID_SPEED;
 
         break;
       }
