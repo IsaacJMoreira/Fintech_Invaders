@@ -14,10 +14,11 @@ using fabgl::iclamp;
 #define ASTEROID_COUNT 5
 #define EXPLOSION_FRAMES 4
 
-#define STAR_LAYER0_SPEED 8
-#define STAR_LAYER1_SPEED 4
-#define STAR_LAYER2_SPEED 2
-#define STAR_LAYER3_SPEED 1
+float     STAR_LAYER3_SPEED  = 1;
+#define STAR_LAYER0_SPEED (STAR_LAYER1_SPEED * 2)
+#define STAR_LAYER1_SPEED (STAR_LAYER2_SPEED * 2)
+#define STAR_LAYER2_SPEED (STAR_LAYER3_SPEED * 2)
+
 
 #define PLAYER_FIRE_SPEED 4
 
@@ -146,6 +147,8 @@ struct GameScene : public Scene {
 
     int dots = width * height * 0.05;
 
+    canvas.drawBitmap(PLAY_AREA_LEFT + 1, 0, &STARFIELD);
+
     for (int i = 0; i < dots; i++) {
 
       int color = random(0, 3);
@@ -204,6 +207,7 @@ struct GameScene : public Scene {
 
       index++;
     }
+    DisplayController.refreshSprites();
   }
 
   void updateStars() {
@@ -247,6 +251,11 @@ struct GameScene : public Scene {
       spriteType[i] = TYPE_NONE;
 
     canvas.clear();
+
+    for (int i = 0; i < SPRITESCOUNT; i++) {
+      sprites[i].clearBitmaps();
+      sprites[i].visible = true;
+    }
 
     spriteType[20] = TYPE_PLAYER;
     spriteType[22] = TYPE_PLAYER_FIRE;
@@ -573,6 +582,7 @@ struct GameScene : public Scene {
 
       Sprite* asteroid = (typeA == TYPE_ASTEROID) ? spriteA : spriteB;
 
+      STAR_LAYER3_SPEED = 0;
       // trigger asteroid explosion
       for (int i = 0; i < ASTEROID_COUNT; i++) {
         asteroidSpeed[i] = 0;
