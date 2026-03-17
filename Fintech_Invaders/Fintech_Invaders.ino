@@ -16,7 +16,7 @@ int MISSION_TIME = 0;
 #define STAR2_COUNT 3
 
 float ASTEROID_SPEED = 1;
-#define ASTEROID_COUNT 5
+#define ASTEROID_COUNT 3
 #define EXPLOSION_FRAMES 4
 
 float STAR_LAYER3_SPEED = 0.1;
@@ -97,12 +97,16 @@ enum SpriteType {
   TYPE_NONE = 0,
   TYPE_PLAYER,
   TYPE_PLAYER_FIRE,
-  TYPE_ASTEROID
+  TYPE_ASTEROID,
+  TYPE_PEGUEPAGUE
 };
 
 struct GameScene : public Scene {
 
-  static const int SPRITESCOUNT = 35;
+
+  int peguePagueRespawnTime = 0;
+
+  static const int SPRITESCOUNT = 36;
 
   fabgl::Sprite sprites[SPRITESCOUNT];
   SpriteType spriteType[SPRITESCOUNT];
@@ -114,10 +118,20 @@ struct GameScene : public Scene {
   fabgl::Sprite* asteroids[ASTEROID_COUNT] = {
     &sprites[23],
     &sprites[24],
-    &sprites[25],
-    &sprites[26],
+    // &sprites[25],
+    //&sprites[26],
     &sprites[27]
   };
+
+  fabgl::Sprite* peguePague = &sprites[28];
+
+  bool peguePagueExploding = false;
+  int peguePagueExplosionFrame = 0;
+  int peguePagueExplosionTimer = 0;
+
+  bool peguePagueActive = false;
+  int peguePagueHits = 0;
+  float peguePagueX = 0;
 
   bool asteroidActive[ASTEROID_COUNT];
   int asteroidSpeed[ASTEROID_COUNT];
@@ -223,6 +237,7 @@ struct GameScene : public Scene {
 
       index++;
     }
+
     DisplayController.refreshSprites();
   }
 
@@ -326,6 +341,20 @@ struct GameScene : public Scene {
       spriteType[23 + i] = TYPE_ASTEROID;
     }
 
+    peguePague->addBitmap(&PEGUEEPAGUE_0);
+    peguePague->addBitmap(&EXPLOSION_0);
+    peguePague->addBitmap(&EXPLOSION_1);
+    peguePague->addBitmap(&EXPLOSION_2);
+    peguePague->addBitmap(&EXPLOSION_3);
+
+    peguePague->moveTo(-100, -100);
+
+    spriteType[28] = TYPE_PEGUEPAGUE;
+
+    addSprite(peguePague);
+
+    peguePagueRespawnTime = 500;
+
     canvas.setBrushColor(Color::White);
 
     canvas.fillRectangle(0, 0, PLAY_AREA_LEFT, DisplayController.getViewPortHeight());
@@ -362,7 +391,7 @@ struct GameScene : public Scene {
     currentUpdateCount = updateCount;
 
 
-    if ((updateCount % 75) == 0 && !gameOver) {
+    if ((updateCount % 70) == 0 && !gameOver) {
       SCORE++;
       SCREEN_SPEED += 0.05;
       PLAYER_FIRE_SPEED = PLAYER_FIRE_SPEED + 0.15 >= PLAYER_FIRE_MAX_SPEED ? PLAYER_FIRE_MAX_SPEED : PLAYER_FIRE_SPEED + 0.1;
@@ -378,98 +407,100 @@ struct GameScene : public Scene {
     STAR_LAYER0_SPEED = (STAR_LAYER1_SPEED * 2);
     STAR_LAYER1_SPEED = (STAR_LAYER2_SPEED * 2);
     STAR_LAYER2_SPEED = (STAR_LAYER3_SPEED * 2);
-    ///////////////////////////////////////////////////////////////////////
-    //////////////////////////////// SCORE ////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////
-    canvas.setBrushColor(Color::Blue);
-    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 1, 318, 7);
-    canvas.selectFont(&fabgl::FONT_4x6);
-    canvas.setPenColor(Color::BrightCyan);
-    canvas.drawText(PLAY_AREA_RIGHT + 2, 2, "SCORE");
-    canvas.drawTextFmt(297, 2, "%05d", SCORE);
 
-    ///////////////////////////////////////////////////////////////////////
-    //////////////////////////////// TEMPO ////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////
-    canvas.setBrushColor(127, 82, 0);
-    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 9, 318, 15);
-    canvas.selectFont(&fabgl::FONT_4x6);
-    canvas.setPenColor(Color::BrightYellow);
-    canvas.drawText(PLAY_AREA_RIGHT + 2, 10, "TEMPO");
-    canvas.drawTextFmt(277, 10, "%010d", MISSION_TIME);
+    if ((updateCount % 25) == 0) {
+      ///////////////////////////////////////////////////////////////////////
+      //////////////////////////////// SCORE ////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////
+      canvas.setBrushColor(Color::Blue);
+      canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 1, 318, 7);
+      canvas.selectFont(&fabgl::FONT_4x6);
+      canvas.setPenColor(Color::BrightCyan);
+      canvas.drawText(PLAY_AREA_RIGHT + 2, 2, "SCORE");
+      canvas.drawTextFmt(297, 2, "%05d", SCORE);
 
-    ///////////////////////////////////////////////////////////////////////
-    /////////////////////////// PROJECTILE SPEED //////////////////////////
-    ///////////////////////////////////////////////////////////////////////
-    canvas.setBrushColor(Color::Blue);
-    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 17, 318, 23);
-    canvas.selectFont(&fabgl::FONT_4x6);
-    canvas.setPenColor(Color::BrightCyan);
-    canvas.drawText(PLAY_AREA_RIGHT + 2, 18, "VEL.PROJETIL");
-    canvas.drawTextFmt(297, 18, "%05d", (int)(PLAYER_FIRE_SPEED * 100));  //JUST FOR SHOW
-    ///////////////////////////////////////////////////////////////////////
-    /////////////////////////// PROJECTILE SPEED //////////////////////////
-    ///////////////////////////////////////////////////////////////////////
-    canvas.setBrushColor(Color::Blue);
-    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 25, 318, 31);
-    canvas.selectFont(&fabgl::FONT_4x6);
-    canvas.setPenColor(Color::BrightCyan);
-    canvas.drawText(PLAY_AREA_RIGHT + 2, 26, "PROJETIL VEL.MAX");
-    if (PLAYER_FIRE_SPEED == PLAYER_FIRE_MAX_SPEED) {
+      ///////////////////////////////////////////////////////////////////////
+      //////////////////////////////// TEMPO ////////////////////////////////
+      ///////////////////////////////////////////////////////////////////////
+      canvas.setBrushColor(127, 82, 0);
+      canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 9, 318, 15);
+      canvas.selectFont(&fabgl::FONT_4x6);
+      canvas.setPenColor(Color::BrightYellow);
+      canvas.drawText(PLAY_AREA_RIGHT + 2, 10, "TEMPO");
+      canvas.drawTextFmt(277, 10, "%010d", MISSION_TIME);
 
-      canvas.setPenColor(Color::BrightGreen);
-      canvas.setBrushColor(Color::BrightGreen);
-      canvas.fillEllipse(314, 28, 4, 4);  //JUST FOR SHOW
-    } else {
-      canvas.setPenColor(Color::Red);
-      canvas.setBrushColor(Color::Red);
-      canvas.fillEllipse(314, 28, 4, 4);  //JUST FOR SHOW
+      ///////////////////////////////////////////////////////////////////////
+      /////////////////////////// PROJECTILE SPEED //////////////////////////
+      ///////////////////////////////////////////////////////////////////////
+      canvas.setBrushColor(Color::Blue);
+      canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 17, 318, 23);
+      canvas.selectFont(&fabgl::FONT_4x6);
+      canvas.setPenColor(Color::BrightCyan);
+      canvas.drawText(PLAY_AREA_RIGHT + 2, 18, "VEL.PROJETIL");
+      canvas.drawTextFmt(297, 18, "%05d", (int)(PLAYER_FIRE_SPEED * 100));  //JUST FOR SHOW
+      ///////////////////////////////////////////////////////////////////////
+      /////////////////////////// PROJECTILE SPEED //////////////////////////
+      ///////////////////////////////////////////////////////////////////////
+      canvas.setBrushColor(Color::Blue);
+      canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 25, 318, 31);
+      canvas.selectFont(&fabgl::FONT_4x6);
+      canvas.setPenColor(Color::BrightCyan);
+      canvas.drawText(PLAY_AREA_RIGHT + 2, 26, "PROJETIL VEL.MAX");
+      if (PLAYER_FIRE_SPEED == PLAYER_FIRE_MAX_SPEED) {
+
+        canvas.setPenColor(Color::BrightGreen);
+        canvas.setBrushColor(Color::BrightGreen);
+        canvas.fillEllipse(314, 28, 4, 4);  //JUST FOR SHOW
+      } else {
+        canvas.setPenColor(Color::Red);
+        canvas.setBrushColor(Color::Red);
+        canvas.fillEllipse(314, 28, 4, 4);  //JUST FOR SHOW
+      }
+
+
+      ///////////////////////////////////////////////////////////////////////
+      /////////////////////////// PROJECTILE COUNT //////////////////////////
+      ///////////////////////////////////////////////////////////////////////
+      canvas.setBrushColor(Color::Blue);
+      canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 33, 318, 39);
+      canvas.selectFont(&fabgl::FONT_4x6);
+      canvas.setPenColor(Color::BrightCyan);
+      canvas.drawText(PLAY_AREA_RIGHT + 2, 34, "MINICAO");
+      //canvas.setPenColor(Color::Yellow);
+      canvas.drawTextFmt(297, 34, "%05d", PLAYER_AMO_COUNT);  //JUST FOR SHOW
+
+      ///////////////////////////////////////////////////////////////////////
+      /////////////////////////// PROJECTILE READY //////////////////////////
+      ///////////////////////////////////////////////////////////////////////
+      canvas.setBrushColor(Color::Blue);
+      canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 41, 318, 47);
+      canvas.selectFont(&fabgl::FONT_4x6);
+      canvas.setPenColor(Color::BrightCyan);
+      canvas.drawText(PLAY_AREA_RIGHT + 2, 42, "PROJETIL PRONTO");
+
+      if (!playerFire->visible) {
+
+        canvas.setPenColor(Color::BrightGreen);
+        canvas.setBrushColor(Color::BrightGreen);
+        canvas.fillEllipse(314, 44, 4, 4);  //JUST FOR SHOW
+      } else {
+
+        canvas.setPenColor(Color::Red);
+        canvas.setBrushColor(Color::Red);
+        canvas.fillEllipse(314, 44, 4, 4);  //JUST FOR SHOW
+      }
+
+      ///////////////////////////////////////////////////////////////////////
+      /////////////////////////// PROJECTILE SPEED //////////////////////////
+      ///////////////////////////////////////////////////////////////////////
+      canvas.setBrushColor(127, 82, 0);
+      canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 49, 318, 55);
+      canvas.selectFont(&fabgl::FONT_4x6);
+      canvas.setPenColor(Color::BrightYellow);
+      canvas.drawText(PLAY_AREA_RIGHT + 2, 50, "VEL.NAVE");
+      //canvas.setPenColor(Color::Yellow);
+      canvas.drawTextFmt(297, 50, "%05d", (int)(SCREEN_SPEED * 100 + 100));  //JUST FOR SHOW
     }
-
-
-    ///////////////////////////////////////////////////////////////////////
-    /////////////////////////// PROJECTILE COUNT //////////////////////////
-    ///////////////////////////////////////////////////////////////////////
-    canvas.setBrushColor(Color::Blue);
-    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 33, 318, 39);
-    canvas.selectFont(&fabgl::FONT_4x6);
-    canvas.setPenColor(Color::BrightCyan);
-    canvas.drawText(PLAY_AREA_RIGHT + 2, 34, "MINICAO");
-    //canvas.setPenColor(Color::Yellow);
-    canvas.drawTextFmt(297, 34, "%05d", PLAYER_AMO_COUNT);  //JUST FOR SHOW
-
-    ///////////////////////////////////////////////////////////////////////
-    /////////////////////////// PROJECTILE READY //////////////////////////
-    ///////////////////////////////////////////////////////////////////////
-    canvas.setBrushColor(Color::Blue);
-    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 41, 318, 47);
-    canvas.selectFont(&fabgl::FONT_4x6);
-    canvas.setPenColor(Color::BrightCyan);
-    canvas.drawText(PLAY_AREA_RIGHT + 2, 42, "PROJETIL PRONTO");
-
-    if (!playerFire->visible) {
-
-      canvas.setPenColor(Color::BrightGreen);
-      canvas.setBrushColor(Color::BrightGreen);
-      canvas.fillEllipse(314, 44, 4, 4);  //JUST FOR SHOW
-    } else {
-
-      canvas.setPenColor(Color::Red);
-      canvas.setBrushColor(Color::Red);
-      canvas.fillEllipse(314, 44, 4, 4);  //JUST FOR SHOW
-    }
-
-    ///////////////////////////////////////////////////////////////////////
-    /////////////////////////// PROJECTILE SPEED //////////////////////////
-    ///////////////////////////////////////////////////////////////////////
-    canvas.setBrushColor(127, 82, 0);
-    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 49, 318, 55);
-    canvas.selectFont(&fabgl::FONT_4x6);
-    canvas.setPenColor(Color::BrightYellow);
-    canvas.drawText(PLAY_AREA_RIGHT + 2, 50, "VEL.NAVE");
-    //canvas.setPenColor(Color::Yellow);
-    canvas.drawTextFmt(297, 50, "%05d", (int)(SCREEN_SPEED * 100 + 100));  //JUST FOR SHOW
-
 
     auto keyboard = PS2Controller.keyboard();
 
@@ -630,13 +661,22 @@ struct GameScene : public Scene {
 
     if (playerFired) {
 
-      playerFire->y -= playerFireSpeed;
+      int steps = max(1, (int)playerFireSpeed);
 
-      if (playerFire->y <= 0) {
+      for (int i = 0; i < steps; i++) {
 
-        playerFired = false;
+        playerFire->y -= 1;
 
-        playerFire->visible = false;
+        updateSprite(playerFire);
+
+        if (!playerFire->visible)
+          break;
+
+        if (playerFire->y <= 0) {
+          playerFired = false;
+          playerFire->visible = false;
+          break;
+        }
       }
     }
 
@@ -697,16 +737,107 @@ struct GameScene : public Scene {
       }
     }
 
+    if (!peguePagueActive && !peguePagueExploding && MISSION_TIME >= peguePagueRespawnTime) {
+
+      peguePagueActive = true;
+      peguePagueHits = 0;
+
+      peguePagueExploding = false;
+      peguePagueExplosionFrame = 0;
+      peguePagueExplosionTimer = 0;
+
+      int lane = random(0, PLAYER_AREA_LANES);
+
+      peguePagueX = PLAY_AREA_LEFT + lane * 32 + 8;
+
+      peguePague->setFrame(0);
+      peguePague->moveTo((int)peguePagueX, -16);
+    }
+
+    // ---------- PEGUEPAGUE EXPLOSION ----------
+    if (peguePagueExploding) {
+
+      if (updateCount - peguePagueExplosionTimer > 2) {
+
+        peguePagueExplosionTimer = updateCount;
+        peguePagueExplosionFrame++;
+
+        if (peguePagueExplosionFrame < EXPLOSION_FRAMES) {
+
+          peguePague->setFrame(peguePagueExplosionFrame + 1);
+
+        } else {
+
+          peguePagueExploding = false;
+          peguePagueActive = false;
+
+          peguePague->setFrame(0);  // reset sprite to normal ship
+
+          peguePague->moveTo(-100, -100);
+
+          peguePagueRespawnTime = MISSION_TIME + 1000;
+        }
+      }
+    }
+
+    if (peguePagueActive) {
+
+
+      peguePague->y += 1;
+
+      // smooth horizontal tracking
+      float predictedPlayerX = player->x + playerVelX * 20;
+      float playerCenter = predictedPlayerX + player->getWidth() / 2;
+      float pegueCenter = peguePagueX + peguePague->getWidth() / 2;
+
+      if (updateCount % 3 == 0) {
+
+        float dx = playerCenter - pegueCenter;
+
+        float move = dx * 0.03;
+
+        if (fabs(move) < 0.25)
+          move = (dx > 0) ? 0.25 : -0.25;
+
+        peguePagueX += move;
+      }
+
+      peguePagueX = iclamp(
+        peguePagueX,
+        PLAY_AREA_LEFT + 1,
+        PLAY_AREA_RIGHT - peguePague->getWidth());
+
+      peguePague->x = (int)peguePagueX;
+
+      if (peguePague->y > DisplayController.getViewPortHeight()) {
+
+        peguePagueActive = false;
+        peguePagueExploding = false;
+        peguePagueHits = 0;
+
+        peguePague->setFrame(0);
+        peguePague->moveTo(-100, -100);
+
+        peguePagueRespawnTime = MISSION_TIME + 1000;
+      }
+    }
+
     ////////////////////////////////////////////////////////
 
     updateStars();
 
     updateSprite(player);
     updateSprite(afterburner);
-    updateSpriteAndDetectCollisions(playerFire);
+
+    updateSpriteAndDetectCollisions(player);
+
+    updateSpriteAndDetectCollisions(peguePague);
 
     for (int i = 0; i < ASTEROID_COUNT; i++)
       updateSpriteAndDetectCollisions(asteroids[i]);
+
+    if (playerFire->visible)
+      updateSpriteAndDetectCollisions(playerFire);
 
     DisplayController.refreshSprites();
   }
@@ -767,16 +898,70 @@ struct GameScene : public Scene {
           asteroidExplosionFrame[i] = 1;
           asteroidExplosionTimer[i] = currentUpdateCount;
 
-          asteroids[i]->setFrame(1);
+          asteroids[i]->setFrame(4);
 
           playerFire->visible = false;
           playerFired = false;
 
-          break;
+          return;  // ← ADD THIS
         }
       }
     }
+
+    if ((typeA == TYPE_PLAYER_FIRE && typeB == TYPE_PEGUEPAGUE) || (typeB == TYPE_PLAYER_FIRE && typeA == TYPE_PEGUEPAGUE)) {
+
+      if (!peguePagueActive || peguePagueExploding)
+        return;
+
+      playerFire->visible = false;
+      playerFired = false;
+
+      peguePagueHits++;
+
+      if (peguePagueHits >= 3) {
+
+        SCORE += 25;
+        PLAYER_AMO_COUNT += 10;
+
+        peguePagueExploding = true;
+        peguePagueExplosionFrame = 0;
+        peguePagueExplosionTimer = currentUpdateCount;
+
+        peguePague->setFrame(1);
+      }
+
+      return;  // ← ADD THIS
+    }
+
+    if ((typeA == TYPE_PLAYER && typeB == TYPE_PEGUEPAGUE) || (typeB == TYPE_PLAYER && typeA == TYPE_PEGUEPAGUE)) {
+
+      if (!playerExploding) {
+        playerExploding = true;
+        playerExplosionFrame = 1;
+        playerExplosionTimer = currentUpdateCount;
+      }
+
+      if (!peguePagueActive || peguePagueExploding)
+        return;
+
+      if (SCORE >= 25)
+        SCORE -= 25;
+      else
+        SCORE = 0;
+
+      peguePagueExploding = true;
+      peguePagueExplosionFrame = 0;
+      peguePagueExplosionTimer = currentUpdateCount;
+
+      peguePague->setFrame(1);
+
+      // kill player
+      playerExploding = true;
+      playerExplosionFrame = 1;
+      playerExplosionTimer = currentUpdateCount;
+    }
   }
+
 
   //////////////////////////////////////////////////////////////////////
   ////////////////////////// ASTEROIDS //////////////////////////////////
@@ -814,7 +999,7 @@ void setup() {
   DisplayController.begin();
   DisplayController.setResolution(VGA_320x200_70Hz);
 
-  DisplayController.moveScreen(21, 0);
+  DisplayController.moveScreen(21, 1);
 }
 
 void loop() {
