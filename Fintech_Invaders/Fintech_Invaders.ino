@@ -25,6 +25,11 @@ float STAR_LAYER1_SPEED = (STAR_LAYER2_SPEED * 2);
 float STAR_LAYER0_SPEED = (STAR_LAYER1_SPEED * 2);
 
 float PLAYER_FIRE_SPEED = 1;
+#define PLAYER_FIRE_MAX_SPEED 5
+int PLAYER_AMO_COUNT = 10;
+#define PLAYER_MAX_AMO_AUTO 10       // FOR AUTO
+#define PLAYER_MAX_AMO_ABSOLUTE 500  //FOR PHASE 2
+
 
 enum GameState {
   INTRO_SCREEN,
@@ -55,6 +60,9 @@ struct IntroScene : public Scene {
     SCORE = 0;
     SCREEN_SPEED = 0;
     MISSION_TIME = 0;
+    PLAYER_FIRE_SPEED = 1;
+    PLAYER_AMO_COUNT = 10;
+    ASTEROID_SPEED = 1;
     canvas.clear();
     canvas.drawBitmap(0, 0, &FINTECH_INVADERS);
   }
@@ -291,7 +299,13 @@ struct GameScene : public Scene {
 
     for (int i = 0; i < ASTEROID_COUNT; i++) {
 
-      asteroids[i]->addBitmap(&ASTEROID);
+      // asteroid rotation frames
+      asteroids[i]->addBitmap(&ASTEROID_0);
+      asteroids[i]->addBitmap(&ASTEROID_1);
+      asteroids[i]->addBitmap(&ASTEROID_2);
+      asteroids[i]->addBitmap(&ASTEROID_3);
+
+      // explosion frames
       asteroids[i]->addBitmap(&EXPLOSION_0);
       asteroids[i]->addBitmap(&EXPLOSION_1);
       asteroids[i]->addBitmap(&EXPLOSION_2);
@@ -350,12 +364,16 @@ struct GameScene : public Scene {
 
     if ((updateCount % 75) == 0 && !gameOver) {
       SCORE++;
-      SCREEN_SPEED += 0.01;
+      SCREEN_SPEED += 0.05;
+      PLAYER_FIRE_SPEED = PLAYER_FIRE_SPEED + 0.15 >= PLAYER_FIRE_MAX_SPEED ? PLAYER_FIRE_MAX_SPEED : PLAYER_FIRE_SPEED + 0.1;
+      if (SCORE % 10 == 0 && PLAYER_AMO_COUNT < PLAYER_MAX_AMO_AUTO) {
+        PLAYER_AMO_COUNT++;
+      }
     };
-    if(!gameOver) MISSION_TIME++;
+
+    if (!gameOver) MISSION_TIME++;
     float speedIncrease = SCREEN_SPEED / 30;
     ASTEROID_SPEED = 1 + speedIncrease;
-    PLAYER_FIRE_SPEED = 1 + (float)SCORE/50;
     STAR_LAYER3_SPEED = 0.1 + speedIncrease;
     STAR_LAYER0_SPEED = (STAR_LAYER1_SPEED * 2);
     STAR_LAYER1_SPEED = (STAR_LAYER2_SPEED * 2);
@@ -373,7 +391,7 @@ struct GameScene : public Scene {
     ///////////////////////////////////////////////////////////////////////
     //////////////////////////////// TEMPO ////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    canvas.setBrushColor(127,82,0);
+    canvas.setBrushColor(127, 82, 0);
     canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 9, 318, 15);
     canvas.selectFont(&fabgl::FONT_4x6);
     canvas.setPenColor(Color::BrightYellow);
@@ -388,18 +406,69 @@ struct GameScene : public Scene {
     canvas.selectFont(&fabgl::FONT_4x6);
     canvas.setPenColor(Color::BrightCyan);
     canvas.drawText(PLAY_AREA_RIGHT + 2, 18, "VEL.PROJETIL");
-    canvas.drawTextFmt(297, 18, "%05.1f", PLAYER_FIRE_SPEED);
+    canvas.drawTextFmt(297, 18, "%05d", (int)(PLAYER_FIRE_SPEED * 100));  //JUST FOR SHOW
     ///////////////////////////////////////////////////////////////////////
     /////////////////////////// PROJECTILE SPEED //////////////////////////
     ///////////////////////////////////////////////////////////////////////
-    canvas.setBrushColor(127,82,0);
+    canvas.setBrushColor(Color::Blue);
     canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 25, 318, 31);
     canvas.selectFont(&fabgl::FONT_4x6);
-    canvas.setPenColor(Color::BrightYellow);
-    canvas.drawText(PLAY_AREA_RIGHT + 2, 26, "VEL.NAVE");
-     //canvas.setPenColor(Color::Yellow);
-    canvas.drawTextFmt(293, 26, "%06.1f", SCREEN_SPEED);
+    canvas.setPenColor(Color::BrightCyan);
+    canvas.drawText(PLAY_AREA_RIGHT + 2, 26, "PROJETIL VEL.MAX");
+    if (PLAYER_FIRE_SPEED == PLAYER_FIRE_MAX_SPEED) {
 
+      canvas.setPenColor(Color::BrightGreen);
+      canvas.setBrushColor(Color::BrightGreen);
+      canvas.fillEllipse(314, 28, 4, 4);  //JUST FOR SHOW
+    } else {
+      canvas.setPenColor(Color::Red);
+      canvas.setBrushColor(Color::Red);
+      canvas.fillEllipse(314, 28, 4, 4);  //JUST FOR SHOW
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////
+    /////////////////////////// PROJECTILE COUNT //////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    canvas.setBrushColor(Color::Blue);
+    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 33, 318, 39);
+    canvas.selectFont(&fabgl::FONT_4x6);
+    canvas.setPenColor(Color::BrightCyan);
+    canvas.drawText(PLAY_AREA_RIGHT + 2, 34, "MINICAO");
+    //canvas.setPenColor(Color::Yellow);
+    canvas.drawTextFmt(297, 34, "%05d", PLAYER_AMO_COUNT);  //JUST FOR SHOW
+
+    ///////////////////////////////////////////////////////////////////////
+    /////////////////////////// PROJECTILE READY //////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    canvas.setBrushColor(Color::Blue);
+    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 41, 318, 47);
+    canvas.selectFont(&fabgl::FONT_4x6);
+    canvas.setPenColor(Color::BrightCyan);
+    canvas.drawText(PLAY_AREA_RIGHT + 2, 42, "PROJETIL PRONTO");
+
+    if (!playerFire->visible) {
+
+      canvas.setPenColor(Color::BrightGreen);
+      canvas.setBrushColor(Color::BrightGreen);
+      canvas.fillEllipse(314, 44, 4, 4);  //JUST FOR SHOW
+    } else {
+
+      canvas.setPenColor(Color::Red);
+      canvas.setBrushColor(Color::Red);
+      canvas.fillEllipse(314, 44, 4, 4);  //JUST FOR SHOW
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    /////////////////////////// PROJECTILE SPEED //////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    canvas.setBrushColor(127, 82, 0);
+    canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 49, 318, 55);
+    canvas.selectFont(&fabgl::FONT_4x6);
+    canvas.setPenColor(Color::BrightYellow);
+    canvas.drawText(PLAY_AREA_RIGHT + 2, 50, "VEL.NAVE");
+    //canvas.setPenColor(Color::Yellow);
+    canvas.drawTextFmt(297, 50, "%05d", (int)(SCREEN_SPEED * 100));  //JUST FOR SHOW
 
 
     auto keyboard = PS2Controller.keyboard();
@@ -442,7 +511,9 @@ struct GameScene : public Scene {
         rightPressed = true;
       }
 
-      if (keyboard->isVKDown(fabgl::VK_SPACE) && !playerFired) {
+      if (keyboard->isVKDown(fabgl::VK_SPACE) && !playerFired && PLAYER_AMO_COUNT) {
+
+        PLAYER_AMO_COUNT = PLAYER_AMO_COUNT - 1 <= 0 ? 0 : PLAYER_AMO_COUNT - 1;
 
         playerFire->visible = true;
 
@@ -453,6 +524,8 @@ struct GameScene : public Scene {
         playerFire_x = player->x + 2;
 
         playerFire_y = player->y - 3;
+
+        PLAYER_FIRE_SPEED = PLAYER_FIRE_SPEED - 0.1 <= 1 ? PLAYER_FIRE_SPEED : PLAYER_FIRE_SPEED - 0.1;  //EVERY TIME FIRE, IT LOOSES SPEED
 
         playerFire->moveTo(playerFire_x, playerFire_y);
       }
@@ -583,7 +656,7 @@ struct GameScene : public Scene {
 
           if (asteroidExplosionFrame[i] < EXPLOSION_FRAMES) {
 
-            asteroids[i]->setFrame(asteroidExplosionFrame[i]);
+            asteroids[i]->setFrame(asteroidExplosionFrame[i] + 4);
 
           } else {
 
@@ -597,7 +670,9 @@ struct GameScene : public Scene {
       }
     }
 
-    if (updateCount % (int)(40 - MISSION_TIME/1000) == 0)
+
+    int asteroidSpawnInterval = (40 - MISSION_TIME / 500) <= 1 ? 1 : 40 - MISSION_TIME / 500;
+    if (updateCount % asteroidSpawnInterval == 0)
       spawnAsteroid();
 
     for (int i = 0; i < ASTEROID_COUNT; i++) {
@@ -605,6 +680,13 @@ struct GameScene : public Scene {
       if (asteroidActive[i] && !asteroidExploding[i]) {
 
         asteroids[i]->y += asteroidSpeed[i];
+
+        // asteroid rotation animation
+        if (updateCount % 6 == 0) {
+          int frame = asteroids[i]->getFrameIndex();
+          frame = (frame + 1) % 4;
+          asteroids[i]->setFrame(frame);
+        }
 
         if (asteroids[i]->y > DisplayController.getViewPortHeight()) {
 
@@ -659,7 +741,7 @@ struct GameScene : public Scene {
           asteroidExplosionFrame[i] = 1;
           asteroidExplosionTimer[i] = currentUpdateCount;
 
-          asteroids[i]->setFrame(1);
+          asteroids[i]->setFrame(4);
 
           break;
         }
@@ -675,7 +757,7 @@ struct GameScene : public Scene {
 
       Sprite* asteroid = (typeA == TYPE_ASTEROID) ? spriteA : spriteB;
 
-      if (SCORE >= 10) SCORE -= 10;
+      SCORE++;
 
       for (int i = 0; i < ASTEROID_COUNT; i++) {
 
