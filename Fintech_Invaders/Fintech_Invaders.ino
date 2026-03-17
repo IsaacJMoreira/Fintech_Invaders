@@ -468,7 +468,7 @@ struct GameScene : public Scene {
     canvas.setPenColor(Color::BrightYellow);
     canvas.drawText(PLAY_AREA_RIGHT + 2, 50, "VEL.NAVE");
     //canvas.setPenColor(Color::Yellow);
-    canvas.drawTextFmt(297, 50, "%05d", (int)(SCREEN_SPEED * 100));  //JUST FOR SHOW
+    canvas.drawTextFmt(297, 50, "%05d", (int)(SCREEN_SPEED * 100 + 100));  //JUST FOR SHOW
 
 
     auto keyboard = PS2Controller.keyboard();
@@ -812,7 +812,7 @@ void setup() {
   PS2Controller.begin(PS2Preset::KeyboardPort0, KbdMode::GenerateVirtualKeys);
 
   DisplayController.begin();
-  DisplayController.setResolution(VGA_320x200_75Hz);
+  DisplayController.setResolution(VGA_320x200_70Hz);
 
   DisplayController.moveScreen(21, 0);
 }
