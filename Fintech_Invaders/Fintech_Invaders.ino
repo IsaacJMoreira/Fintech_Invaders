@@ -861,6 +861,8 @@ struct GameScene : public Scene {
       STAR_LAYER3_SPEED = 0;
 
       playerFire->visible = false;
+      playerFired = false;
+      playerFire->moveTo(-100, -100);
 
       // trigger asteroid explosion
       for (int i = 0; i < ASTEROID_COUNT; i++) {
@@ -902,6 +904,7 @@ struct GameScene : public Scene {
 
           playerFire->visible = false;
           playerFired = false;
+          playerFire->moveTo(-100, -100);
 
           return;  // ← ADD THIS
         }
@@ -915,6 +918,7 @@ struct GameScene : public Scene {
 
       playerFire->visible = false;
       playerFired = false;
+      playerFire->moveTo(-100, -100);
 
       peguePagueHits++;
 
