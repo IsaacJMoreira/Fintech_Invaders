@@ -15,7 +15,7 @@ int MISSION_TIME = 0;
 #define STAR1_COUNT 7
 #define STAR2_COUNT 3
 
-float ASTEROID_SPEED = 1;
+float ASTEROID_SPEED = 2;
 #define ASTEROID_COUNT 5
 #define EXPLOSION_FRAMES 4
 
@@ -24,14 +24,16 @@ float STAR_LAYER2_SPEED = (STAR_LAYER3_SPEED * 2);
 float STAR_LAYER1_SPEED = (STAR_LAYER2_SPEED * 2);
 float STAR_LAYER0_SPEED = (STAR_LAYER1_SPEED * 2);
 
-float PLAYER_FIRE_SPEED = 2;
-#define PLAYER_FIRE_MAX_SPEED 6
+float PLAYER_FIRE_SPEED = 4;
+#define PLAYER_FIRE_MAX_SPEED 12
 int PLAYER_AMO_COUNT = 10;
 #define PLAYER_MAX_AMO_AUTO 10       // FOR AUTO
 #define PLAYER_MAX_AMO_ABSOLUTE 500  //FOR PHASE 2
 
 #define PEGUE_PAG_RESPAWN_INTERVAL 100
 #define PEGUE_PAGUE_KILL_HITS 3
+#define FEIRAPAGA_RESPAWN_INTERVAL 200
+#define FEIRAPAGA_KILL_HITS  5
 
 enum GameState {
   INTRO_SCREEN,
@@ -100,13 +102,15 @@ enum SpriteType {
   TYPE_PLAYER,
   TYPE_PLAYER_FIRE,
   TYPE_ASTEROID,
-  TYPE_PEGUEPAGUE
+  TYPE_PEGUEPAGUE,
+  TYPE_FEIRAPAGA
 };
 
 struct GameScene : public Scene {
 
 
   int peguePagueRespawnTime = 0;
+  int feiraPagaRespawnTime = 0;
 
   int peguePagueAnimFrame = 0;
   int peguePagueAnimDir = 1;  // 1 = forward, -1 = backward
@@ -131,6 +135,8 @@ struct GameScene : public Scene {
 
   fabgl::Sprite* peguePague = &sprites[28];
 
+  fabgl::Sprite* feiraPaga = &sprites[29];
+
   bool peguePagueExploding = false;
   int peguePagueExplosionFrame = 0;
   int peguePagueExplosionTimer = 0;
@@ -138,6 +144,17 @@ struct GameScene : public Scene {
   bool peguePagueActive = false;
   int peguePagueHits = 0;
   float peguePagueX = 0;
+
+  bool feiraPagaExploding = false;
+  int feiraPagaExplosionFrame = 0;
+  int feiraPagaExplosionTimer = 0;
+
+  bool feiraPagaActive = false;
+  int feiraPagaHits = 0;
+  float feiraPagaX = 0;
+
+  int feiraPagaAnimFrame = 0;
+  int feiraPagaAnimTimer = 0;
 
   bool asteroidActive[ASTEROID_COUNT];
   int asteroidSpeed[ASTEROID_COUNT];
@@ -364,7 +381,25 @@ struct GameScene : public Scene {
 
     addSprite(peguePague);
 
+    feiraPaga->addBitmap(&FEIRAPAGA_0);
+    feiraPaga->addBitmap(&FEIRAPAGA_1);
+    feiraPaga->addBitmap(&FEIRAPAGA_2);
+    feiraPaga->addBitmap(&FEIRAPAGA_3);
+
+    // explosion frames
+    feiraPaga->addBitmap(&EXPLOSION_0);
+    feiraPaga->addBitmap(&EXPLOSION_1);
+    feiraPaga->addBitmap(&EXPLOSION_2);
+    feiraPaga->addBitmap(&EXPLOSION_3);
+
+    feiraPaga->moveTo(-100, -100);
+
+    spriteType[29] = TYPE_FEIRAPAGA;
+
+    addSprite(feiraPaga);
+
     peguePagueRespawnTime = PEGUE_PAG_RESPAWN_INTERVAL;
+    feiraPagaRespawnTime = FEIRAPAGA_RESPAWN_INTERVAL;
 
     canvas.setBrushColor(Color::White);
 
@@ -399,7 +434,7 @@ struct GameScene : public Scene {
 
   void update(int updateCount) override {
 
-    if (updateCount % 2 == 0) {
+    if (updateCount % 4 == 0) {
 
       currentUpdateCount = updateCount;
 
@@ -546,11 +581,11 @@ struct GameScene : public Scene {
 
         if (keyboard->isVKDown(fabgl::VK_LEFT)) {
 
-          playerVelX = -4;
+          playerVelX = -8;
           leftPressed = true;
         } else if (keyboard->isVKDown(fabgl::VK_RIGHT)) {
 
-          playerVelX = 4;
+          playerVelX = 8;
           rightPressed = true;
         }
 
@@ -714,7 +749,7 @@ struct GameScene : public Scene {
       }
 
 
-      int asteroidSpawnInterval = (40 - MISSION_TIME / 500) <= 1 ? 1 : 40 - MISSION_TIME / 500;
+      int asteroidSpawnInterval = (120 - MISSION_TIME / 300) <= 1 ? 1 : 120 - MISSION_TIME / 300;
       if (updateCount % asteroidSpawnInterval == 0)
         spawnAsteroid();
 
@@ -769,6 +804,27 @@ struct GameScene : public Scene {
         peguePague->moveTo((int)peguePagueX, -16);
       }
 
+      // ---------- FEIRAPAGA SPAWN ----------
+      if (!feiraPagaActive && !feiraPagaExploding && MISSION_TIME >= feiraPagaRespawnTime + 50) {
+
+        feiraPagaActive = true;
+        feiraPagaHits = 0;
+
+        feiraPagaExploding = false;
+        feiraPagaExplosionFrame = 0;
+        feiraPagaExplosionTimer = 0;
+
+        feiraPagaAnimFrame = 0;
+        feiraPagaAnimTimer = currentUpdateCount;
+
+        int lane = random(0, PLAYER_AREA_LANES);
+
+        feiraPagaX = PLAY_AREA_LEFT + lane * 32 + 8;
+
+        feiraPaga->setFrame(0);
+        feiraPaga->moveTo((int)feiraPagaX, -16);
+      }
+
       // ---------- PEGUEPAGUE EXPLOSION ----------
       if (peguePagueExploding) {
 
@@ -795,6 +851,29 @@ struct GameScene : public Scene {
         }
       }
 
+      // ---------- FEIRAPAGA EXPLOSION ----------
+      if (feiraPagaExploding) {
+
+        if (updateCount - feiraPagaExplosionTimer > 2) {
+
+          feiraPagaExplosionTimer = updateCount;
+          feiraPagaExplosionFrame++;
+
+          if (feiraPagaExplosionFrame < EXPLOSION_FRAMES) {
+
+            feiraPaga->setFrame(feiraPagaExplosionFrame + 4);
+
+          } else {
+
+            feiraPagaExploding = false;
+            feiraPagaActive = false;
+
+            feiraPaga->setFrame(0);
+            feiraPaga->moveTo(-100, -100);
+          }
+        }
+      }
+
       if (peguePagueActive) {
 
         // ---------- PEGUEPAGUE ANIMATION ----------
@@ -816,6 +895,7 @@ struct GameScene : public Scene {
           peguePague->setFrame(peguePagueAnimFrame);
         }
 
+
         // TARGET = EXACT PLAYER X (no prediction, no float drift)
         int targetX = player->x;
 
@@ -832,21 +912,7 @@ struct GameScene : public Scene {
         // apply movement
         peguePague->x += dx;
 
-        // --- FIXED MOVEMENT ---
 
-        // Smooth horizontal tracking
-        //int targetX = (int)peguePagueX;
-        //int dx = targetX - peguePague->x;
-
-        // clamp horizontal speed (prevents jitter)
-        // int maxStep = 2;  // tweak this (1 = slow, 3 = aggressive)
-
-        // if (dx > maxStep) dx = maxStep;
-        //if (dx < -maxStep) dx = -maxStep;
-
-        //peguePague->x += dx;
-
-        // constant vertical movement
         peguePague->y += 1;
 
         // single collision check AFTER movement
@@ -860,7 +926,45 @@ struct GameScene : public Scene {
 
           peguePague->moveTo(-100, -100);
 
-          peguePagueRespawnTime = MISSION_TIME + PEGUE_PAG_RESPAWN_INTERVAL;
+          peguePagueRespawnTime = MISSION_TIME + FEIRAPAGA_RESPAWN_INTERVAL;
+        }
+      }
+
+      // ---------- FEIRAPAGA ANIMATION (LOOP) ----------
+      if (feiraPagaActive && !feiraPagaExploding) {
+
+        if (currentUpdateCount - feiraPagaAnimTimer > 4) {
+
+          feiraPagaAnimTimer = currentUpdateCount;
+
+          feiraPagaAnimFrame = (feiraPagaAnimFrame + 1) % 4;  // LOOP
+
+          feiraPaga->setFrame(feiraPagaAnimFrame);
+        }
+      }
+
+      if (feiraPagaActive && !feiraPagaExploding) {
+
+        int targetX = player->x;
+        int dx = targetX - feiraPaga->x;
+
+        int maxStep = 2;
+
+        if (dx > maxStep) dx = maxStep;
+        else if (dx < -maxStep) dx = -maxStep;
+
+        feiraPaga->x += dx;
+        feiraPaga->y += 1;
+
+        updateSpriteAndDetectCollisions(feiraPaga);
+
+        if (feiraPaga->y > DisplayController.getViewPortHeight()) {
+
+          feiraPagaActive = false;
+          feiraPagaExploding = false;
+          feiraPagaHits = 0;
+
+          feiraPaga->moveTo(-100, -100);
         }
       }
 
@@ -895,18 +999,8 @@ struct GameScene : public Scene {
 
       updateStars();
 
-      //updateSprite(player);
       updateSprite(afterburner);
 
-      //updateSpriteAndDetectCollisions(player);
-
-      //updateSpriteAndDetectCollisions(peguePague);
-
-      //for (int i = 0; i < ASTEROID_COUNT; i++)
-      //updateSpriteAndDetectCollisions(asteroids[i]);
-
-      //if (playerFire->visible)
-      //updateSpriteAndDetectCollisions(playerFire);
 
       DisplayController.refreshSprites();
     }
@@ -996,8 +1090,8 @@ struct GameScene : public Scene {
 
       if (peguePagueHits >= PEGUE_PAGUE_KILL_HITS) {
 
-        SCORE += 25;
-        PLAYER_AMO_COUNT += 10;
+        SCORE += 30;
+        PLAYER_AMO_COUNT += 15;
 
         peguePagueExploding = true;
         peguePagueExplosionFrame = 0;
@@ -1006,7 +1100,7 @@ struct GameScene : public Scene {
         peguePague->setFrame(1);
       }
 
-      return;  // ← ADD THIS
+      return;
     }
 
     if ((typeA == TYPE_PLAYER && typeB == TYPE_PEGUEPAGUE) || (typeB == TYPE_PLAYER && typeA == TYPE_PEGUEPAGUE)) {
@@ -1035,6 +1129,51 @@ struct GameScene : public Scene {
       playerExploding = true;
       playerExplosionFrame = 1;
       playerExplosionTimer = currentUpdateCount;
+    }
+    if ((typeA == TYPE_PLAYER_FIRE && typeB == TYPE_FEIRAPAGA) || (typeB == TYPE_PLAYER_FIRE && typeA == TYPE_FEIRAPAGA)) {
+
+      if (!feiraPagaActive || feiraPagaExploding)
+        return;
+      if (!playerFire->visible)
+        return;
+
+      playerFire->visible = false;
+      playerFired = false;
+      playerFire->moveTo(-100, -100);
+
+      feiraPagaHits++;
+
+      if (feiraPagaHits >= FEIRAPAGA_KILL_HITS) {
+
+        SCORE += 30;
+        PLAYER_AMO_COUNT += 15;
+
+        feiraPagaExploding = true;
+        feiraPagaExplosionFrame = 0;
+        feiraPagaExplosionTimer = currentUpdateCount;
+
+        feiraPaga->setFrame(1);
+      }
+
+      return;
+    }
+
+    if ((typeA == TYPE_PLAYER && typeB == TYPE_FEIRAPAGA) || (typeB == TYPE_PLAYER && typeA == TYPE_FEIRAPAGA)) {
+
+      if (!playerExploding) {
+        playerExploding = true;
+        playerExplosionFrame = 1;
+        playerExplosionTimer = currentUpdateCount;
+      }
+
+      if (!feiraPagaActive || feiraPagaExploding)
+        return;
+
+      feiraPagaExploding = true;
+      feiraPagaExplosionFrame = 0;
+      feiraPagaExplosionTimer = currentUpdateCount;
+
+      feiraPaga->setFrame(1);
     }
   }
 
