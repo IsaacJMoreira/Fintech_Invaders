@@ -33,7 +33,7 @@ int PLAYER_AMO_COUNT = 10;
 #define PEGUE_PAG_RESPAWN_INTERVAL 100
 #define PEGUE_PAGUE_KILL_HITS 3
 #define FEIRAPAGA_RESPAWN_INTERVAL 200
-#define FEIRAPAGA_KILL_HITS  5
+#define FEIRAPAGA_KILL_HITS 5
 
 enum GameState {
   INTRO_SCREEN,
@@ -434,7 +434,7 @@ struct GameScene : public Scene {
 
   void update(int updateCount) override {
 
-    if (updateCount % 4 == 0) {
+    if (updateCount % 1 == 0) {
 
       currentUpdateCount = updateCount;
 
@@ -749,7 +749,7 @@ struct GameScene : public Scene {
       }
 
 
-      int asteroidSpawnInterval = (120 - MISSION_TIME / 300) <= 1 ? 1 : 120 - MISSION_TIME / 300;
+      int asteroidSpawnInterval = (100 - MISSION_TIME / 500) <= 1 ? 1 : 100 - MISSION_TIME / 500;
       if (updateCount % asteroidSpawnInterval == 0)
         spawnAsteroid();
 
@@ -784,47 +784,52 @@ struct GameScene : public Scene {
         }
       }
 
-      if (!peguePagueActive && !peguePagueExploding && MISSION_TIME >= peguePagueRespawnTime) {
+      if (!peguePagueActive && !peguePagueExploding && MISSION_TIME >= 100) {
 
-        peguePagueActive = true;
-        peguePagueHits = 0;
+        if (random(0, 100) < 2) {  // ~2% chance per update
 
-        peguePagueExploding = false;
-        peguePagueExplosionFrame = 0;
-        peguePagueExplosionTimer = 0;
-        peguePagueAnimFrame = 0;
-        peguePagueAnimDir = 1;
-        peguePagueAnimTimer = currentUpdateCount;
+          peguePagueActive = true;
+          peguePagueHits = 0;
 
-        int lane = random(0, PLAYER_AREA_LANES);
+          peguePagueExploding = false;
+          peguePagueExplosionFrame = 0;
+          peguePagueExplosionTimer = 0;
+          peguePagueAnimFrame = 0;
+          peguePagueAnimDir = 1;
+          peguePagueAnimTimer = currentUpdateCount;
 
-        peguePagueX = PLAY_AREA_LEFT + lane * 32 + 8;
+          int lane = random(0, PLAYER_AREA_LANES);
+          peguePagueX = PLAY_AREA_LEFT + lane * 32 + 8;
 
-        peguePague->setFrame(0);
-        peguePague->moveTo((int)peguePagueX, -16);
+          peguePague->setFrame(0);
+          peguePague->moveTo((int)peguePagueX, -16);
+        }
       }
 
       // ---------- FEIRAPAGA SPAWN ----------
-      if (!feiraPagaActive && !feiraPagaExploding && MISSION_TIME >= feiraPagaRespawnTime + 50) {
+      bool feiraCondition = (PLAYER_FIRE_SPEED >= 3.0f) || (MISSION_TIME >= 1000);
 
-        feiraPagaActive = true;
-        feiraPagaHits = 0;
+      if (!feiraPagaActive && !feiraPagaExploding && feiraCondition) {
 
-        feiraPagaExploding = false;
-        feiraPagaExplosionFrame = 0;
-        feiraPagaExplosionTimer = 0;
+        if (random(0, 100) < 1) {  // rarer than PeguePague
 
-        feiraPagaAnimFrame = 0;
-        feiraPagaAnimTimer = currentUpdateCount;
+          feiraPagaActive = true;
+          feiraPagaHits = 0;
 
-        int lane = random(0, PLAYER_AREA_LANES);
+          feiraPagaExploding = false;
+          feiraPagaExplosionFrame = 0;
+          feiraPagaExplosionTimer = 0;
 
-        feiraPagaX = PLAY_AREA_LEFT + lane * 32 + 8;
+          feiraPagaAnimFrame = 0;
+          feiraPagaAnimTimer = currentUpdateCount;
 
-        feiraPaga->setFrame(0);
-        feiraPaga->moveTo((int)feiraPagaX, -16);
+          int lane = random(0, PLAYER_AREA_LANES);
+          feiraPagaX = PLAY_AREA_LEFT + lane * 32 + 8;
+
+          feiraPaga->setFrame(0);
+          feiraPaga->moveTo((int)feiraPagaX, -16);
+        }
       }
-
       // ---------- PEGUEPAGUE EXPLOSION ----------
       if (peguePagueExploding) {
 
