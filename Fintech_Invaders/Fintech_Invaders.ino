@@ -68,7 +68,7 @@ struct IntroScene : public Scene {
     PLAYER_AMO_COUNT = 10;
     ASTEROID_SPEED = 1;
     canvas.clear();
-    canvas.drawBitmap(0, 0, &FINTECH_INVADERS);
+    canvas.drawBitmap(0, 0, &ATTACK);
   }
 
   void update(int updateCount) override {
