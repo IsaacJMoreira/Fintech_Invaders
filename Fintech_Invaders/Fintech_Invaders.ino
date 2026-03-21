@@ -25,7 +25,7 @@ float STAR_LAYER1_SPEED = (STAR_LAYER2_SPEED * 2);
 float STAR_LAYER0_SPEED = (STAR_LAYER1_SPEED * 2);
 
 float PLAYER_FIRE_SPEED = 1;
-#define PLAYER_FIRE_MAX_SPEED 5
+#define PLAYER_FIRE_MAX_SPEED 7
 int PLAYER_AMO_COUNT = 10;
 #define PLAYER_MAX_AMO_AUTO 10       // FOR AUTO
 #define PLAYER_MAX_AMO_ABSOLUTE 500  //FOR PHASE 2
@@ -34,6 +34,8 @@ int PLAYER_AMO_COUNT = 10;
 #define PEGUE_PAGUE_KILL_HITS 5
 #define FEIRAPAGA_RESPAWN_INTERVAL 300
 #define FEIRAPAGA_KILL_HITS 7
+#define OUTER_KILL_HITS 1
+#define OUTER_RESPAWN_INTERVAL 500
 
 enum GameState {
   INTRO_SCREEN,
@@ -100,7 +102,8 @@ enum SpriteType {
   TYPE_PLAYER_FIRE,
   TYPE_ASTEROID,
   TYPE_PEGUEPAGUE,
-  TYPE_FEIRAPAGA
+  TYPE_FEIRAPAGA,
+  TYPE_OUTER
 };
 
 struct GameScene : public Scene {
@@ -182,6 +185,21 @@ struct GameScene : public Scene {
 
   int gameOverTime = 0;
   bool gameOver = false;
+
+  fabgl::Sprite* outer = &sprites[30];
+
+  bool outerActive = false;
+  bool outerExploding = false;
+
+  int outerHits = 0;
+
+  int outerExplosionFrame = 0;
+  int outerExplosionTimer = 0;
+
+  int outerAnimFrame = 0;
+  int outerAnimTimer = 0;
+
+  float outerX = 0;
 
   GameScene()
     : Scene(SPRITESCOUNT, 20, 320, 200) {}
@@ -394,6 +412,23 @@ struct GameScene : public Scene {
     spriteType[29] = TYPE_FEIRAPAGA;
 
     addSprite(feiraPaga);
+
+    outer->addBitmap(&OUTER_0);
+    outer->addBitmap(&OUTER_1);
+    outer->addBitmap(&OUTER_2);
+    outer->addBitmap(&OUTER_3);
+
+    // explosion frames
+    outer->addBitmap(&EXPLOSION_0);
+    outer->addBitmap(&EXPLOSION_1);
+    outer->addBitmap(&EXPLOSION_2);
+    outer->addBitmap(&EXPLOSION_3);
+
+    outer->moveTo(-100, -100);
+
+    spriteType[30] = TYPE_OUTER;
+
+    addSprite(outer);
 
     peguePagueRespawnTime = PEGUE_PAG_RESPAWN_INTERVAL;
     feiraPagaRespawnTime = FEIRAPAGA_RESPAWN_INTERVAL;
@@ -680,8 +715,8 @@ struct GameScene : public Scene {
         SCREEN_SPEED += 0.05;
         PLAYER_FIRE_SPEED = PLAYER_FIRE_SPEED + 0.0055f >= PLAYER_FIRE_MAX_SPEED ? PLAYER_FIRE_MAX_SPEED : PLAYER_FIRE_SPEED + 0.0055f;
         //if (SCORE % 10 == 0 && PLAYER_AMO_COUNT < PLAYER_MAX_AMO_AUTO) {
-         // PLAYER_AMO_COUNT++;
-       // }
+        // PLAYER_AMO_COUNT++;
+        // }
       }
 
 
@@ -834,6 +869,30 @@ struct GameScene : public Scene {
           feiraPaga->moveTo((int)feiraPagaX, -16);
         }
       }
+
+      bool outerCondition = (MISSION_TIME >= OUTER_RESPAWN_INTERVAL);
+
+      if (!outerActive && !outerExploding && outerCondition) {
+
+        if (random(0, 1000) < 5) {
+
+          outerActive = true;
+          outerHits = 0;
+
+          outerExploding = false;
+          outerExplosionFrame = 0;
+          outerExplosionTimer = 0;
+
+          outerAnimFrame = 0;
+          outerAnimTimer = currentUpdateCount;
+
+          int lane = random(0, PLAYER_AREA_LANES);
+          outerX = PLAY_AREA_LEFT + lane * 32 + 8;
+
+          outer->setFrame(0);
+          outer->moveTo((int)outerX, -16);
+        }
+      }
       // ---------- PEGUEPAGUE EXPLOSION ----------
       if (peguePagueExploding) {
 
@@ -952,6 +1011,8 @@ struct GameScene : public Scene {
         }
       }
 
+
+
       if (feiraPagaActive && !feiraPagaExploding) {
 
         int targetX = player->x;
@@ -974,6 +1035,67 @@ struct GameScene : public Scene {
           feiraPagaHits = 0;
 
           feiraPaga->moveTo(-100, -100);
+        }
+      }
+
+      if (outerActive && !outerExploding) {
+
+        if (currentUpdateCount - outerAnimTimer > 4) {
+
+          outerAnimTimer = currentUpdateCount;
+
+          outerAnimFrame = (outerAnimFrame + 1) % 4;
+
+          outer->setFrame(outerAnimFrame);
+        }
+      }
+
+      if (outerActive && !outerExploding) {
+
+        int targetX = player->x;
+        int dx = targetX - outer->x;
+
+        int maxStep = 5;  // horizontal speed
+
+        if (dx > maxStep) dx = maxStep;
+        else if (dx < -maxStep) dx = -maxStep;
+
+        outer->x += dx;
+
+        // vertical speed = 3
+        outer->y += 5;
+
+        updateSpriteAndDetectCollisions(outer);
+
+        if (outer->y > DisplayController.getViewPortHeight()) {
+
+          outerActive = false;
+          outerExploding = false;
+          outerHits = 0;
+
+          outer->moveTo(-100, -100);
+        }
+      }
+
+      if (outerExploding) {
+
+        if (updateCount - outerExplosionTimer > 2) {
+
+          outerExplosionTimer = updateCount;
+          outerExplosionFrame++;
+
+          if (outerExplosionFrame < EXPLOSION_FRAMES) {
+
+            outer->setFrame(outerExplosionFrame + 4);
+
+          } else {
+
+            outerExploding = false;
+            outerActive = false;
+
+            outer->setFrame(0);
+            outer->moveTo(-100, -100);
+          }
         }
       }
 
@@ -1026,6 +1148,31 @@ struct GameScene : public Scene {
 
     SpriteType typeA = spriteType[indexA];
     SpriteType typeB = spriteType[indexB];
+
+    if ((typeA == TYPE_PLAYER && typeB == TYPE_OUTER) || (typeB == TYPE_PLAYER && typeA == TYPE_OUTER)) {
+
+      if (!playerExploding) {
+        playerExploding = true;
+        playerExplosionFrame = 1;
+        playerExplosionTimer = currentUpdateCount;
+      }
+
+      if (!outerActive || outerExploding)
+        return;
+
+      if (SCORE >= 50)
+        SCORE -= 50;
+      else
+        SCORE = 0;
+
+      outerExploding = true;
+      outerExplosionFrame = 0;
+      outerExplosionTimer = currentUpdateCount;
+
+      outer->setFrame(1);
+    }
+
+
 
     if ((typeA == TYPE_PLAYER && typeB == TYPE_ASTEROID) || (typeB == TYPE_PLAYER && typeA == TYPE_ASTEROID)) {
 
@@ -1082,6 +1229,34 @@ struct GameScene : public Scene {
           return;  // ← ADD THIS
         }
       }
+    }
+
+    if ((typeA == TYPE_PLAYER_FIRE && typeB == TYPE_OUTER) || (typeB == TYPE_PLAYER_FIRE && typeA == TYPE_OUTER)) {
+
+      if (!outerActive || outerExploding)
+        return;
+      if (!playerFire->visible)
+        return;
+
+      playerFire->visible = false;
+      playerFired = false;
+      playerFire->moveTo(-100, -100);
+
+      outerHits++;
+
+      if (outerHits >= OUTER_KILL_HITS) {
+
+        SCORE += 50;             // stronger reward
+        PLAYER_AMO_COUNT += 15;  // bigger reward
+
+        outerExploding = true;
+        outerExplosionFrame = 0;
+        outerExplosionTimer = currentUpdateCount;
+
+        outer->setFrame(1);
+      }
+
+      return;
     }
 
     if ((typeA == TYPE_PLAYER_FIRE && typeB == TYPE_PEGUEPAGUE) || (typeB == TYPE_PLAYER_FIRE && typeA == TYPE_PEGUEPAGUE)) {
@@ -1177,6 +1352,11 @@ struct GameScene : public Scene {
 
       if (!feiraPagaActive || feiraPagaExploding)
         return;
+
+      if (SCORE >= 30)
+        SCORE -= 30;
+      else
+        SCORE = 0;
 
       feiraPagaExploding = true;
       feiraPagaExplosionFrame = 0;
