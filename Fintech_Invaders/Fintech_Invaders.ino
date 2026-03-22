@@ -1,5 +1,14 @@
 #include "fabgl.h"
 #include "sprites.h"
+#include <EEPROM.h>
+
+#define EEPROM_SIZE 64
+#define HIGHSCORE_ADDR 0
+#define PLAYERNAME_ADDR 4  // after int (4 bytes)
+#define MAX_NAME_LENGTH 15
+
+int HIGH_SCORE = 0;
+char HIGH_SCORE_NAME[MAX_NAME_LENGTH + 1] = "PLAYER";
 
 using fabgl::iclamp;
 
@@ -50,6 +59,133 @@ fabgl::VGAController DisplayController;
 fabgl::PS2Controller PS2Controller;
 fabgl::Canvas canvas(&DisplayController);
 
+void loadHighScore() {
+  EEPROM.begin(EEPROM_SIZE);
+
+  EEPROM.get(HIGHSCORE_ADDR, HIGH_SCORE);
+
+  for (int i = 0; i < MAX_NAME_LENGTH; i++) {
+    HIGH_SCORE_NAME[i] = EEPROM.read(PLAYERNAME_ADDR + i);
+  }
+
+  HIGH_SCORE_NAME[MAX_NAME_LENGTH] = '\0';
+
+  // safety fallback
+  if (HIGH_SCORE < 0 || HIGH_SCORE > 999999) {
+    HIGH_SCORE = 0;
+    strcpy(HIGH_SCORE_NAME, "PLAYER");
+  }
+}
+
+void saveHighScore() {
+
+  EEPROM.put(HIGHSCORE_ADDR, HIGH_SCORE);
+
+  for (int i = 0; i < MAX_NAME_LENGTH; i++) {
+    EEPROM.write(PLAYERNAME_ADDR + i,
+                 i < strlen(HIGH_SCORE_NAME) ? HIGH_SCORE_NAME[i] : 0);
+  }
+
+  EEPROM.commit();
+}
+
+/////////// HI SCORE SCENE ///////////////////////
+
+struct InputNameScene : public Scene {
+
+  char name[MAX_NAME_LENGTH + 1] = "";
+  int length = 0;
+
+  InputNameScene()
+    : Scene(0, 20, 320, 200) {}
+
+  void init() override {
+    canvas.clear();
+    canvas.selectFont(&fabgl::FONT_8x8);
+    auto keyboard = PS2Controller.keyboard();
+    if (keyboard) {
+      keyboard->setLayout(&fabgl::USLayout);
+      keyboard->enableVirtualKeys(true, true);
+    }
+  }
+
+  void update(int updateCount) override {
+
+    auto keyboard = PS2Controller.keyboard();
+
+    if (!keyboard || !keyboard->isKeyboardAvailable())
+      return;
+
+    fabgl::VirtualKeyItem vk;
+
+    while (keyboard->virtualKeyAvailable()) {
+
+      keyboard->getNextVirtualKey(&vk);
+
+      if (!vk.down)
+        continue;
+
+      if (vk.vk == fabgl::VK_RETURN) {
+
+        if (length == 0)
+          strcpy(name, "PLAYER");
+
+        strcpy(HIGH_SCORE_NAME, name);
+        saveHighScore();
+
+        auto keyboard = PS2Controller.keyboard();
+        if (keyboard) {         
+          keyboard->emptyVirtualKeyQueue();
+          keyboard->enableVirtualKeys(true, false);  // 🔥 disable VK system
+        }
+
+        gameState = INTRO_SCREEN;
+        stop();
+        return;
+      }
+
+      else if (vk.vk == fabgl::VK_BACKSPACE) {
+
+        if (length > 0) {
+          length--;
+          name[length] = '\0';
+        }
+      }
+
+      else if (vk.ASCII >= 32 && vk.ASCII <= 126) {
+
+        if (length < MAX_NAME_LENGTH) {
+
+          char c = (char)vk.ASCII;
+
+          if (c >= 'a' && c <= 'z')
+            c -= 32;
+
+          name[length++] = c;
+          name[length] = '\0';
+        }
+      }
+    }
+
+    // 🔥 DRAW EVERYTHING EVERY FRAME (NO onPaint)
+    canvas.clear();
+
+    canvas.setPenColor(Color::White);
+    canvas.drawText(60, 80, "NEW HIGH SCORE!");
+    canvas.drawText(60, 100, "ENTER NAME:");
+
+    canvas.setPenColor(Color::BrightGreen);
+    canvas.drawText(60, 120, name);
+
+    // blinking cursor
+    if ((millis() / 300) % 2 == 0 && length < MAX_NAME_LENGTH) {
+      canvas.drawText(60 + (length * 8), 120, "_");
+    }
+  }
+
+  void collisionDetected(Sprite*, Sprite*, Point) override {}
+};
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////// INTRO SCENE //////////////////////////////////////////////////////////////////////
@@ -69,11 +205,31 @@ struct IntroScene : public Scene {
     PLAYER_FIRE_SPEED = 1;
     PLAYER_AMO_COUNT = 10;
     ASTEROID_SPEED = 1;
+
     canvas.clear();
-    canvas.drawBitmap(0, 0, &ATTACK);
+    canvas.drawBitmap(0, 0, &INVITE);
+
+    // 🔥 DRAW HIGH SCORE
+    canvas.selectFont(&fabgl::FONT_8x8);
+    canvas.setPenColor(Color::Yellow);
+
+    canvas.drawText(10, 170, "MELHOR JOGADOR:");
+
+    canvas.setPenColor(Color::White);
+    canvas.drawTextFmt(10, 180, "%s  %05d", HIGH_SCORE_NAME, HIGH_SCORE);
+
+    //auto keyboard = PS2Controller.keyboard();
+    //if (keyboard) {
+      //keyboard->emptyVirtualKeyQueue();
+   // }
+
+
   }
 
   void update(int updateCount) override {
+
+    if (updateCount < 20)
+      return;
 
     auto keyboard = PS2Controller.keyboard();
 
@@ -316,6 +472,7 @@ struct GameScene : public Scene {
 
   void init() override {
 
+
     STAR_LAYER3_SPEED = 1;
 
     for (int i = 0; i < SPRITESCOUNT; i++)
@@ -465,6 +622,9 @@ struct GameScene : public Scene {
   //////////////////////////////////////////////////////////////////////
 
   void update(int updateCount) override {
+
+    if (updateCount < 20)
+      return;
 
     auto keyboard = PS2Controller.keyboard();
 
@@ -732,10 +892,19 @@ struct GameScene : public Scene {
 
 
       if (gameOver) {
-
         canvas.selectFont(&fabgl::FONT_8x8);
         canvas.setPenColor(Color::Red);
         canvas.drawText(124, 100, "GAME OVER");
+
+        delay(3000);
+
+        if (SCORE > HIGH_SCORE) {
+          HIGH_SCORE = SCORE;
+          DisplayController.removeSprites();
+          gameState = INPUT_NAME_HI_SCORE;
+          stop();
+          return;
+        }
 
         if (keyboard && keyboard->isKeyboardAvailable() && keyboard->isVKDown(fabgl::VK_SPACE)) {
 
@@ -1063,7 +1232,7 @@ struct GameScene : public Scene {
         outer->x += dx;
 
         // vertical speed = 3
-        outer->y += 5;
+        outer->y += 3;
 
         updateSpriteAndDetectCollisions(outer);
 
@@ -1402,8 +1571,17 @@ void setup() {
 
   DisplayController.begin();
   DisplayController.setResolution(VGA_320x200_70Hz);
-
   DisplayController.moveScreen(21, 1);
+
+  EEPROM.begin(EEPROM_SIZE);
+
+  // 🔥 FORCE RESET
+  HIGH_SCORE = 0;
+  strcpy(HIGH_SCORE_NAME, "PLAYER");
+
+  saveHighScore();   // already has commit()
+
+  // loadHighScore(); ❌ not needed after reset
 }
 
 void loop() {
@@ -1415,5 +1593,10 @@ void loop() {
   if (gameState == IN_GAME) {
     GameScene game;
     game.start();
+  }
+
+  if (gameState == INPUT_NAME_HI_SCORE) {
+    InputNameScene input;
+    input.start();
   }
 }
