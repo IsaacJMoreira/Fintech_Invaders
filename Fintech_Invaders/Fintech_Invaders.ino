@@ -134,7 +134,7 @@ struct InputNameScene : public Scene {
         saveHighScore();
 
         auto keyboard = PS2Controller.keyboard();
-        if (keyboard) {         
+        if (keyboard) {
           keyboard->emptyVirtualKeyQueue();
           keyboard->enableVirtualKeys(true, false);  // 🔥 disable VK system
         }
@@ -207,23 +207,23 @@ struct IntroScene : public Scene {
     ASTEROID_SPEED = 1;
 
     canvas.clear();
-    canvas.drawBitmap(0, 0, &INVITE);
+    canvas.drawBitmap(0, 0, &FINTECH_INVADERS);
 
     // 🔥 DRAW HIGH SCORE
-    canvas.selectFont(&fabgl::FONT_8x8);
-    canvas.setPenColor(Color::Yellow);
+    canvas.setBrushColor(Color::Blue);
+    canvas.fillRectangle(187, 172, 320, 200);
+    canvas.selectFont(&fabgl::FONT_4x6);
+    canvas.setPenColor(Color::BrightCyan);
 
-    canvas.drawText(10, 170, "MELHOR JOGADOR:");
+    canvas.drawText(207, 179, "MELHOR JOGADOR | SCORE");
 
-    canvas.setPenColor(Color::White);
-    canvas.drawTextFmt(10, 180, "%s  %05d", HIGH_SCORE_NAME, HIGH_SCORE);
+    canvas.setPenColor(Color::BrightYellow);
+    canvas.drawTextFmt(207, 189, "%s | %05d", HIGH_SCORE_NAME, HIGH_SCORE);
 
     //auto keyboard = PS2Controller.keyboard();
     //if (keyboard) {
-      //keyboard->emptyVirtualKeyQueue();
-   // }
-
-
+    //keyboard->emptyVirtualKeyQueue();
+    // }
   }
 
   void update(int updateCount) override {
@@ -263,6 +263,9 @@ enum SpriteType {
 };
 
 struct GameScene : public Scene {
+
+  unsigned long gameOverStartTime = 0;
+  bool gameOverHandled = false;
 
 
   int peguePagueRespawnTime = 0;
@@ -783,6 +786,9 @@ struct GameScene : public Scene {
           player->visible = false;
 
           gameOver = true;
+
+          gameOverStartTime = millis();  // 🔥 start timer
+          gameOverHandled = false;       // 🔥 reset flag
         }
       }
     }
@@ -892,27 +898,55 @@ struct GameScene : public Scene {
 
 
       if (gameOver) {
+
         canvas.selectFont(&fabgl::FONT_8x8);
         canvas.setPenColor(Color::Red);
         canvas.drawText(124, 100, "GAME OVER");
 
-        delay(3000);
+        unsigned long elapsed = millis() - gameOverStartTime;
 
+        // 🔥 HIGH SCORE → go after 1 second (no input needed)
         if (SCORE > HIGH_SCORE) {
-          HIGH_SCORE = SCORE;
-          DisplayController.removeSprites();
-          gameState = INPUT_NAME_HI_SCORE;
-          stop();
-          return;
-        }
 
-        if (keyboard && keyboard->isKeyboardAvailable() && keyboard->isVKDown(fabgl::VK_SPACE)) {
+          if (elapsed >= 1000 && !gameOverHandled) {
 
-          DisplayController.removeSprites();  // IMPORTANT
+            gameOverHandled = true;
 
-          gameState = INTRO_SCREEN;
+            HIGH_SCORE = SCORE;
 
-          stop();
+            DisplayController.removeSprites();
+            gameState = INPUT_NAME_HI_SCORE;
+            stop();
+            return;
+          }
+        } else {
+
+          // 🔥 NORMAL GAME OVER
+
+          // after 5 seconds → go to intro
+          if (elapsed >= 5000 && !gameOverHandled) {
+
+            gameOverHandled = true;
+
+            DisplayController.removeSprites();
+            gameState = INTRO_SCREEN;
+            stop();
+            return;
+          }
+
+          // OR press SPACE → go immediately
+          if (keyboard && keyboard->isKeyboardAvailable() && keyboard->isVKDown(fabgl::VK_SPACE)) {
+
+            if (!gameOverHandled) {
+
+              gameOverHandled = true;
+
+              DisplayController.removeSprites();
+              gameState = INTRO_SCREEN;
+              stop();
+              return;
+            }
+          }
         }
 
         return;
@@ -1579,7 +1613,7 @@ void setup() {
   HIGH_SCORE = 0;
   strcpy(HIGH_SCORE_NAME, "PLAYER");
 
-  saveHighScore();   // already has commit()
+  saveHighScore();  // already has commit()
 
   // loadHighScore(); ❌ not needed after reset
 }
