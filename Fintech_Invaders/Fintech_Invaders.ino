@@ -215,15 +215,14 @@ struct IntroScene : public Scene {
     canvas.selectFont(&fabgl::FONT_4x6);
     canvas.setPenColor(Color::BrightCyan);
 
-    canvas.drawText(207, 179, "MELHOR JOGADOR | SCORE");
+    canvas.drawText(207, 174, "MELHOR JOGADOR | SCORE");
 
     canvas.setPenColor(Color::BrightYellow);
-    canvas.drawTextFmt(207, 189, "%s | %05d", HIGH_SCORE_NAME, HIGH_SCORE);
+    canvas.drawTextFmt(207, 182, "%s | %05d", HIGH_SCORE_NAME, HIGH_SCORE);
 
-    //auto keyboard = PS2Controller.keyboard();
-    //if (keyboard) {
-    //keyboard->emptyVirtualKeyQueue();
-    // }
+    canvas.setPenColor(Color::BrightRed);
+
+    canvas.drawText(196, 192, "PRESSIONE [ESPACO] PARA JOGAR");
   }
 
   void update(int updateCount) override {
