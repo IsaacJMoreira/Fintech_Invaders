@@ -73,7 +73,7 @@ void loadHighScore() {
   // safety fallback
   if (HIGH_SCORE < 0 || HIGH_SCORE > 999999) {
     HIGH_SCORE = 0;
-    strcpy(HIGH_SCORE_NAME, "PLAYER");
+    strcpy(HIGH_SCORE_NAME, "COLEGA");
   }
 }
 
@@ -108,6 +108,18 @@ struct InputNameScene : public Scene {
         // 🔥 DRAW EVERYTHING EVERY FRAME (NO onPaint)
     canvas.clear();
     canvas.drawBitmap(0, 0, &ASTRONAUT);  // 🔥 FIRST STORY SCREEN
+    canvas.setBrushColor(Color::Black);
+    canvas.fillRectangle(187, 93, 318,  115);
+    canvas.setPenColor(Color::BrightYellow);
+    canvas.selectFont(&fabgl::FONT_8x14);
+    canvas.drawText(190, 94, "FINTECH INVADERS");
+    canvas.selectFont(&fabgl::FONT_4x6);
+    //canvas.setPenColor(Color::BrightGreen);
+    canvas.drawText(249, 108, "POR ISAAC MOREIRA");
+    canvas.drawText(249, 194, "V1.0 (01/04/2026)");
+    //canvas.drawText(1, 7, "'THOSE WHO CAN IMAGINE ANYTHING,");
+    //canvas.drawText(1, 7, "CAN CREATE THE IMPOSSIBLE' - ALAN TURING");
+
   }
 
   void update(int updateCount) override {
@@ -174,9 +186,6 @@ struct InputNameScene : public Scene {
     canvas.fillRectangle(0, 172, 177, 200);
     canvas.selectFont(&fabgl::FONT_4x6);
     canvas.setPenColor(Color::BrightCyan);
-
-    canvas.drawText(1, 1, "FINTECH INVADERS V1.0 (01/04/2026) - POR ISAAC MOREIRA");
-    canvas.drawText(1, 7, "Those who can imagine anything, can create the impossible - Alan Turing");
     ///////////////////////////////////////////////////////////////////<<<<
     canvas.drawTextFmt(2, 174, "VOCE CHEGOU LONGE! SEU SCORE: %05d", SCORE);
 
@@ -235,10 +244,10 @@ struct IntroScene : public Scene {
     canvas.selectFont(&fabgl::FONT_4x6);
     canvas.setPenColor(Color::BrightCyan);
 
-    canvas.drawText(2, 174, "MELHOR JOGADOR | SCORE");
+    canvas.drawText(2, 174, "MELHOR SCORE");
 
     canvas.setPenColor(Color::BrightYellow);
-    canvas.drawTextFmt(2, 182, "%s | %05d", HIGH_SCORE_NAME, HIGH_SCORE);
+    canvas.drawTextFmt(2, 183, "%s | %05d", HIGH_SCORE_NAME, HIGH_SCORE);
 
     canvas.setPenColor(Color::BrightRed);
 
