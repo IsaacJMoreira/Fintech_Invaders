@@ -168,11 +168,12 @@ struct InputNameScene : public Scene {
     }
 
     // 🔥 DRAW EVERYTHING EVERY FRAME (NO onPaint)
-    canvas.clear();
+   canvas.clear();
+   canvas.drawBitmap(0, 0, &ASTRONAUT);  // 🔥 FIRST STORY SCREEN
 
     canvas.setPenColor(Color::White);
-    canvas.drawText(60, 80, "NEW HIGH SCORE!");
-    canvas.drawText(60, 100, "ENTER NAME:");
+    canvas.drawText(60, 80, "VOCE CHEGOU MAIS LONGE");
+    canvas.drawText(60, 100, "REGISTRE SEU NOME:");
 
     canvas.setPenColor(Color::BrightGreen);
     canvas.drawText(60, 120, name);
