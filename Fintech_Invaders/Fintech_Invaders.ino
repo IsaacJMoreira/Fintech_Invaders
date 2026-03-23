@@ -100,13 +100,14 @@ struct InputNameScene : public Scene {
     : Scene(0, 20, 320, 200) {}
 
   void init() override {
-    canvas.clear();
-    canvas.selectFont(&fabgl::FONT_8x8);
     auto keyboard = PS2Controller.keyboard();
     if (keyboard) {
       keyboard->setLayout(&fabgl::USLayout);
       keyboard->enableVirtualKeys(true, true);
     }
+        // 🔥 DRAW EVERYTHING EVERY FRAME (NO onPaint)
+    canvas.clear();
+    canvas.drawBitmap(0, 0, &ASTRONAUT);  // 🔥 FIRST STORY SCREEN
   }
 
   void update(int updateCount) override {
@@ -167,20 +168,29 @@ struct InputNameScene : public Scene {
       }
     }
 
-    // 🔥 DRAW EVERYTHING EVERY FRAME (NO onPaint)
-   canvas.clear();
-   canvas.drawBitmap(0, 0, &ASTRONAUT);  // 🔥 FIRST STORY SCREEN
 
-    canvas.setPenColor(Color::White);
-    canvas.drawText(60, 80, "VOCE CHEGOU MAIS LONGE");
-    canvas.drawText(60, 100, "REGISTRE SEU NOME:");
 
-    canvas.setPenColor(Color::BrightGreen);
-    canvas.drawText(60, 120, name);
+    canvas.setBrushColor(Color::Blue);
+    canvas.fillRectangle(0, 172, 177, 200);
+    canvas.selectFont(&fabgl::FONT_4x6);
+    canvas.setPenColor(Color::BrightCyan);
+
+    canvas.drawText(1, 1, "FINTECH INVADERS V1.0 (01/04/2026) - POR ISAAC MOREIRA");
+    canvas.drawText(1, 7, "Those who can imagine anything, can create the impossible - Alan Turing");
+    ///////////////////////////////////////////////////////////////////<<<<
+    canvas.drawTextFmt(2, 174, "VOCE CHEGOU LONGE! SEU SCORE: %05d", SCORE);
+
+    canvas.setPenColor(Color::BrightYellow);
+    canvas.drawText(2, 181, "DIGITE SEU NOME + [ENTER] PARA CONFIRMAR:");
+
+    canvas.setPenColor(Color::BrightCyan);
+    canvas.selectFont(&fabgl::FONT_8x8);
+
+    canvas.drawText(2, 189, name);
 
     // blinking cursor
     if ((millis() / 300) % 2 == 0 && length < MAX_NAME_LENGTH) {
-      canvas.drawText(60 + (length * 8), 120, "_");
+      canvas.drawText(2 + (length * 8), 189, "_");
     }
   }
 
