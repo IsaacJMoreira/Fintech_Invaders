@@ -193,6 +193,15 @@ struct InputNameScene : public Scene {
 
 struct IntroScene : public Scene {
 
+  enum IntroPhase {
+    INTRO_IDLE,
+    INTRO_INVITE,
+    INTRO_ATTACK
+  };
+
+  IntroPhase phase = INTRO_IDLE;
+  unsigned long phaseStartTime = 0;
+
 
 
   IntroScene()
@@ -211,18 +220,20 @@ struct IntroScene : public Scene {
 
     // 🔥 DRAW HIGH SCORE
     canvas.setBrushColor(Color::Blue);
-    canvas.fillRectangle(187, 172, 320, 200);
+    canvas.fillRectangle(0, 172, 120, 200);
     canvas.selectFont(&fabgl::FONT_4x6);
     canvas.setPenColor(Color::BrightCyan);
 
-    canvas.drawText(207, 174, "MELHOR JOGADOR | SCORE");
+    canvas.drawText(2, 174, "MELHOR JOGADOR | SCORE");
 
     canvas.setPenColor(Color::BrightYellow);
-    canvas.drawTextFmt(207, 182, "%s | %05d", HIGH_SCORE_NAME, HIGH_SCORE);
+    canvas.drawTextFmt(2, 182, "%s | %05d", HIGH_SCORE_NAME, HIGH_SCORE);
 
     canvas.setPenColor(Color::BrightRed);
 
-    canvas.drawText(196, 192, "PRESSIONE [ESPACO] PARA JOGAR");
+    canvas.drawText(2, 192, "PRESSIONE [ESPACO] PARA JOGAR");
+    phase = INTRO_IDLE;
+    phaseStartTime = 0;
   }
 
   void update(int updateCount) override {
@@ -232,14 +243,102 @@ struct IntroScene : public Scene {
 
     auto keyboard = PS2Controller.keyboard();
 
-    if (updateCount < 20)
+    // =========================================================
+    // PHASE 1: WAIT FOR SPACE (NORMAL INTRO SCREEN)
+    // =========================================================
+    if (phase == INTRO_IDLE) {
+
+      if (keyboard && keyboard->isVKDown(fabgl::VK_SPACE)) {
+
+        phase = INTRO_ATTACK;
+        phaseStartTime = millis();
+
+        canvas.clear();
+        canvas.drawBitmap(0, 0, &ATTACK);  // 🔥 FIRST STORY SCREEN
+
+        canvas.setBrushColor(Color::Blue);
+        canvas.fillRectangle(180, 120, 320, 200);
+        canvas.selectFont(&fabgl::FONT_4x6);
+        canvas.setPenColor(Color::BrightCyan);
+
+        canvas.drawText(181, 122, "DIARIO DE BORDO - ANO 2018");
+        ///////////////////////////////////////////////////////////////<<<<<<
+        canvas.drawText(181, 134, "O MERCADO MUDOU MAIS RAPIDO DO QUE");
+        canvas.drawText(181, 141, "QUALQUER PREVISAO. NOVAS FORCAS");
+        canvas.drawText(181, 148, "SURGIRAM. SEM AGENCIAS, SEM FILAS,");
+        canvas.drawText(181, 155, "APENAS CODIGO E VELOCIDADE.");
+        canvas.drawText(181, 162, "AS FINTECHS AVANCAM EM ONDAS,");
+        canvas.drawText(181, 169, "CONQUISTANDO CLIENTES E REDUZINDO");
+        canvas.drawText(181, 176, "NOSSO TERRITORIO. SE NAO REAGIRMOS");
+        canvas.drawText(181, 183, "AGORA PERDEREMOS O CONTROLE!");
+
+        canvas.setPenColor(Color::BrightRed);
+
+        canvas.drawText(192, 192, "PRESSIONE [P] PARA PULAR INTRO");
+      }
+
       return;
+    }
 
-    if (keyboard && keyboard->isVKDown(fabgl::VK_SPACE)) {
-
+    // =========================================================
+    // SKIP WITH [P] (WORKS IN ANY STORY PHASE)
+    // =========================================================
+    if (keyboard && (keyboard->isVKDown(fabgl::VK_p) || keyboard->isVKDown(fabgl::VK_P))) {
       gameState = IN_GAME;
-
       stop();
+    }
+
+    unsigned long elapsed = millis() - phaseStartTime;
+
+    // =========================================================
+    // PHASE 2: INVITE → after 5s go to ATTACK
+    // =========================================================
+    if (phase == INTRO_ATTACK) {
+
+      if (elapsed >= 20000) {
+
+        phase = INTRO_INVITE;
+        phaseStartTime = millis();
+
+        canvas.clear();
+        canvas.drawBitmap(0, 0, &INVITE);  // 🔥 SECOND STORY SCREEN
+
+        canvas.setBrushColor(Color::Blue);
+        canvas.fillRectangle(180, 120, 320, 200);
+        canvas.selectFont(&fabgl::FONT_4x6);
+        canvas.setPenColor(Color::BrightCyan);
+
+        ///////////////////////////////////////////////////////////////<<<<<<
+
+        canvas.drawText(181, 122, "PRECISAMOS DE VOCE NESSA MISSAO!");
+        canvas.drawText(181, 129, "ASSUMA O CONTROLE DA NAVE CAIXA E");
+        canvas.drawText(181, 136, "GARANTA O FUTURO DA INSTITUICAO!");
+        //canvas.drawText(181, 143, "");
+        canvas.drawText(181, 150, "NAO VAI SER FACIL. HAVERA PEDRAS");
+        canvas.drawText(181, 157, "NO SEU CAMINHO E O INIMIGO E VELOZ.");
+        canvas.drawText(181, 164, "MAS USANDO BEM OS RECURSOS E");
+        canvas.drawText(181, 171, "POUPANDO, VOCE NOS LEVARA LONGE!");
+        canvas.drawText(181, 178, "CONTAMOS COM VOCE!");
+
+        canvas.setPenColor(Color::BrightRed);
+
+        canvas.drawText(192, 192, "PRESSIONE [P] PARA PULAR INTRO");
+      }
+
+      return;
+    }
+
+    // =========================================================
+    // PHASE 3: ATTACK → after 5s go to GAME
+    // =========================================================
+    if (phase == INTRO_INVITE) {
+
+      if (elapsed >= 20000) {
+
+        gameState = IN_GAME;
+        stop();
+        return;
+      }
     }
   }
 
