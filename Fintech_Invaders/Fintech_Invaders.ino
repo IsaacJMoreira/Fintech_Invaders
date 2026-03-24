@@ -215,6 +215,7 @@ struct IntroScene : public Scene {
 
   enum IntroPhase {
     INTRO_IDLE,
+    INTRO_INSTRUCTIONS,
     INTRO_INVITE,
     INTRO_ATTACK
   };
@@ -277,24 +278,24 @@ struct IntroScene : public Scene {
         canvas.drawBitmap(0, 0, &ATTACK);  // 🔥 FIRST STORY SCREEN
 
         canvas.setBrushColor(Color::Blue);
-        canvas.fillRectangle(180, 120, 320, 200);
+        canvas.fillRectangle(0, 120, 140, 200);
         canvas.selectFont(&fabgl::FONT_4x6);
         canvas.setPenColor(Color::BrightCyan);
 
-        canvas.drawText(181, 122, "DIARIO DE BORDO - ANO 2018");
+        canvas.drawText(1, 122, "DIARIO DE BORDO - ANO 2018");
         ///////////////////////////////////////////////////////////////<<<<<<
-        canvas.drawText(181, 134, "O MERCADO MUDOU MAIS RAPIDO DO QUE");
-        canvas.drawText(181, 141, "QUALQUER PREVISAO. NOVAS FORCAS");
-        canvas.drawText(181, 148, "SURGIRAM. SEM AGENCIAS, SEM FILAS,");
-        canvas.drawText(181, 155, "APENAS CODIGO E VELOCIDADE.");
-        canvas.drawText(181, 162, "AS FINTECHS AVANCAM EM ONDAS,");
-        canvas.drawText(181, 169, "CONQUISTANDO CLIENTES E REDUZINDO");
-        canvas.drawText(181, 176, "NOSSO TERRITORIO. SE NAO REAGIRMOS");
-        canvas.drawText(181, 183, "AGORA PERDEREMOS O CONTROLE!");
+        canvas.drawText(1, 134, "O MERCADO MUDOU MAIS RAPIDO DO QUE");
+        canvas.drawText(1, 141, "QUALQUER PREVISAO. NOVAS FORCAS");
+        canvas.drawText(1, 148, "SURGIRAM. SEM AGENCIAS, SEM FILAS,");
+        canvas.drawText(1, 155, "APENAS CODIGO E VELOCIDADE.");
+        canvas.drawText(1, 162, "AS FINTECHS AVANCAM EM ONDAS,");
+        canvas.drawText(1, 169, "CONQUISTANDO CLIENTES E REDUZINDO");
+        canvas.drawText(1, 176, "NOSSO TERRITORIO. SE NAO REAGIRMOS");
+        canvas.drawText(1, 183, "AGORA PERDEREMOS O CONTROLE!");
 
         canvas.setPenColor(Color::BrightRed);
 
-        canvas.drawText(192, 192, "PRESSIONE [P] PARA PULAR INTRO");
+        canvas.drawText(12, 192, "PRESSIONE [P] PARA PULAR INTRO");
       }
 
       return;
@@ -315,7 +316,7 @@ struct IntroScene : public Scene {
     // =========================================================
     if (phase == INTRO_ATTACK) {
 
-      if (elapsed >= 20000) {
+      if (elapsed >= 2000) {
 
         phase = INTRO_INVITE;
         phaseStartTime = millis();
@@ -348,12 +349,51 @@ struct IntroScene : public Scene {
       return;
     }
 
+    
     // =========================================================
-    // PHASE 3: ATTACK → after 5s go to GAME
+    // PHASE 2: INVITE → after 5s go to ATTACK
     // =========================================================
     if (phase == INTRO_INVITE) {
 
-      if (elapsed >= 20000) {
+      if (elapsed >= 2000) {
+
+        phase = INTRO_INSTRUCTIONS;
+        phaseStartTime = millis();
+
+        canvas.clear();
+        canvas.drawBitmap(0, 0, &INSTRUCTIONS);  // 🔥 SECOND STORY SCREEN
+
+
+        canvas.setPenColor(Color::BrightYellow);
+
+        ///////////////////////////////////////////////////////////////<<<<<<
+        canvas.selectFont(&fabgl::FONT_8x8);
+        canvas.drawText(70, 40, "CONTROLES");
+        //canvas.drawText(181, 129, "ASSUMA O CONTROLE DA NAVE CAIXA E");
+        canvas.drawText(70, 50, "MOVER: [<-] E [->]");
+        //canvas.drawText(181, 143, "");
+        canvas.drawText(70, 60, "ATIRAR: [ESPACO]");
+        //canvas.drawText(181, 157, "NO SEU CAMINHO E O INIMIGO E VELOZ.");
+        //canvas.drawText(181, 164, "MAS USANDO BEM OS RECURSOS E");
+        //canvas.drawText(181, 171, "POUPANDO, VOCE NOS LEVARA LONGE!");
+        //canvas.drawText(181, 178, "CONTAMOS COM VOCE!");
+
+        canvas.setPenColor(Color::BrightRed);
+
+        canvas.selectFont(&fabgl::FONT_4x6);
+
+        canvas.drawText(70, 70, "PRESSIONE [P] PARA PULAR INTRO");
+      }
+
+      return;
+    }
+
+    // =========================================================
+    // PHASE 3: ATTACK → after 5s go to GAME
+    // =========================================================
+    if (phase == INTRO_INSTRUCTIONS) {
+
+      if (elapsed >= 5000) {
 
         gameState = IN_GAME;
         stop();
