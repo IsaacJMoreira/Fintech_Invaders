@@ -38,6 +38,7 @@ float PLAYER_FIRE_SPEED = 1;
 int PLAYER_AMO_COUNT = 10;
 #define PLAYER_MAX_AMO_AUTO 10       // FOR AUTO
 #define PLAYER_MAX_AMO_ABSOLUTE 500  //FOR PHASE 2
+int playerLifeCount = 2;
 
 #define PEGUE_PAG_RESPAWN_INTERVAL 100
 #define PEGUE_PAGUE_KILL_HITS 5
@@ -105,11 +106,11 @@ struct InputNameScene : public Scene {
       keyboard->setLayout(&fabgl::USLayout);
       keyboard->enableVirtualKeys(true, true);
     }
-        // 🔥 DRAW EVERYTHING EVERY FRAME (NO onPaint)
+    // 🔥 DRAW EVERYTHING EVERY FRAME (NO onPaint)
     canvas.clear();
     canvas.drawBitmap(0, 0, &ASTRONAUT);  // 🔥 FIRST STORY SCREEN
     canvas.setBrushColor(Color::Black);
-    canvas.fillRectangle(187, 93, 318,  115);
+    canvas.fillRectangle(187, 93, 318, 115);
     canvas.setPenColor(Color::BrightYellow);
     canvas.selectFont(&fabgl::FONT_8x14);
     canvas.drawText(190, 94, "FINTECH INVADERS");
@@ -119,7 +120,6 @@ struct InputNameScene : public Scene {
     canvas.drawText(249, 194, "V1.0 (01/04/2026)");
     //canvas.drawText(1, 7, "'THOSE WHO CAN IMAGINE ANYTHING,");
     //canvas.drawText(1, 7, "CAN CREATE THE IMPOSSIBLE' - ALAN TURING");
-
   }
 
   void update(int updateCount) override {
@@ -235,6 +235,7 @@ struct IntroScene : public Scene {
     PLAYER_FIRE_SPEED = 1;
     PLAYER_AMO_COUNT = 10;
     ASTEROID_SPEED = 1;
+    playerLifeCount = 2;
 
     canvas.clear();
     canvas.drawBitmap(0, 0, &FINTECH_INVADERS);
@@ -349,7 +350,7 @@ struct IntroScene : public Scene {
       return;
     }
 
-    
+
     // =========================================================
     // PHASE 2: INVITE → after 5s go to ATTACK
     // =========================================================
@@ -370,7 +371,7 @@ struct IntroScene : public Scene {
         canvas.selectFont(&fabgl::FONT_8x8);
         canvas.drawText(70, 40, "CONTROLES");
         //canvas.drawText(181, 129, "ASSUMA O CONTROLE DA NAVE CAIXA E");
-        canvas.drawText(70, 50, "MOVER: [<-] E [->]");
+        canvas.drawText(70, 50, "MOVER: [<-] e [->]");
         //canvas.drawText(181, 143, "");
         canvas.drawText(70, 60, "ATIRAR: [ESPACO]");
         //canvas.drawText(181, 157, "NO SEU CAMINHO E O INIMIGO E VELOZ.");
@@ -417,7 +418,8 @@ enum SpriteType {
   TYPE_ASTEROID,
   TYPE_PEGUEPAGUE,
   TYPE_FEIRAPAGA,
-  TYPE_OUTER
+  TYPE_OUTER,
+  TYPE_FEIRAPAGA_FIRE
 };
 
 struct GameScene : public Scene {
@@ -517,6 +519,11 @@ struct GameScene : public Scene {
   int outerAnimTimer = 0;
 
   float outerX = 0;
+
+  fabgl::Sprite* feiraPagaFire = &sprites[31];
+
+  bool feiraPagaFireActive = false;
+  float feiraPagaFireSpeed = 2;
 
   GameScene()
     : Scene(SPRITESCOUNT, 20, 320, 200) {}
@@ -719,6 +726,14 @@ struct GameScene : public Scene {
     feiraPaga->addBitmap(&FEIRAPAGA_2);
     feiraPaga->addBitmap(&FEIRAPAGA_3);
 
+    feiraPagaFire->addBitmap(&FEIRAPAGA_FIRE);  // FEIRAPAGA projectile bitmap
+    feiraPagaFire->visible = false;
+    feiraPagaFire->moveTo(-100, -100);
+
+    spriteType[31] = TYPE_FEIRAPAGA_FIRE;
+
+    addSprite(feiraPagaFire);
+
     // explosion frames
     feiraPaga->addBitmap(&EXPLOSION_0);
     feiraPaga->addBitmap(&EXPLOSION_1);
@@ -789,7 +804,7 @@ struct GameScene : public Scene {
 
     auto keyboard = PS2Controller.keyboard();
 
-    if ((updateCount % 4) == 0) {
+    if ((updateCount % 4) == 0 && !gameOver) {
       ///////////////////////////////////////////////////////////////////////
       //////////////////////////////// SCORE ////////////////////////////////
       ///////////////////////////////////////////////////////////////////////
@@ -1051,15 +1066,26 @@ struct GameScene : public Scene {
       STAR_LAYER1_SPEED = (STAR_LAYER2_SPEED * 2);
       STAR_LAYER2_SPEED = (STAR_LAYER3_SPEED * 2);
 
-
-
-
-
       if (gameOver) {
 
-        canvas.selectFont(&fabgl::FONT_8x8);
+        DisplayController.removeSprites();
+        canvas.clear();
+        canvas.drawBitmap(0, 0, &ASTRONAUT);  // 🔥 FIRST STORY SCREEN
+        //canvas.setBrushColor(Color::Black);
+        //canvas.fillRectangle(187, 93, 318, 115);
+        canvas.setPenColor(Color::BrightYellow);
+        canvas.selectFont(&fabgl::FONT_8x14);
+        canvas.drawText(190, 94, "FINTECH INVADERS");
+        canvas.selectFont(&fabgl::FONT_4x6);
+        //canvas.setPenColor(Color::BrightGreen);
+        canvas.drawText(249, 108, "POR ISAAC MOREIRA");
+        canvas.drawText(249, 194, "V1.0 (01/04/2026)");
+
+        //canvas.setBrushColor(Color::Blue);
+        //canvas.fillRectangle(0, 172, 177, 200);
+        canvas.selectFont(&fabgl::FONT_8x14);
         canvas.setPenColor(Color::Red);
-        canvas.drawText(124, 100, "GAME OVER");
+        canvas.drawText(1, 174, "GAME OVER");
 
         unsigned long elapsed = millis() - gameOverStartTime;
 
@@ -1282,6 +1308,9 @@ struct GameScene : public Scene {
 
       // ---------- FEIRAPAGA EXPLOSION ----------
       if (feiraPagaExploding) {
+        feiraPagaFireActive = false;
+        feiraPagaFire->visible = false;
+        feiraPagaFire->moveTo(-100, -100);
 
         if (updateCount - feiraPagaExplosionTimer > 2) {
 
@@ -1385,7 +1414,22 @@ struct GameScene : public Scene {
         else if (dx < -maxStep) dx = -maxStep;
 
         feiraPaga->x += dx;
-        feiraPaga->y += 1;
+        feiraPaga->y += 1;//MAKE STATIONARY?
+
+        // ---------- FEIRAPAGA SHOOT ----------
+        if (!feiraPagaFireActive) {
+
+          if (random(0, 100) < 5) {  // tweak difficulty here
+
+            feiraPagaFireActive = true;
+
+            feiraPagaFire->visible = true;
+
+            feiraPagaFire->moveTo(
+              feiraPaga->x + 5,  // adjust to center of sprite
+              feiraPaga->y + 10);
+          }
+        }
 
         updateSpriteAndDetectCollisions(feiraPaga);
 
@@ -1396,6 +1440,10 @@ struct GameScene : public Scene {
           feiraPagaHits = 0;
 
           feiraPaga->moveTo(-100, -100);
+
+          feiraPagaFireActive = false;
+          feiraPagaFire->visible = false;
+          feiraPagaFire->moveTo(-100, -100);
         }
       }
 
@@ -1424,7 +1472,7 @@ struct GameScene : public Scene {
         outer->x += dx;
 
         // vertical speed = 3
-        outer->y += 3;
+        outer->y += 5;
 
         updateSpriteAndDetectCollisions(outer);
 
@@ -1487,6 +1535,34 @@ struct GameScene : public Scene {
         }
       }
 
+      // ---------- FEIRAPAGA FIRE UPDATE ----------
+      if (feiraPagaFireActive) {
+
+        int steps = max(1, (int)feiraPagaFireSpeed);
+
+        for (int i = 0; i < steps; i++) {
+
+          if (!feiraPagaFire->visible)
+            break;
+
+          feiraPagaFire->y += feiraPagaFireSpeed;
+
+          updateSpriteAndDetectCollisions(feiraPagaFire);
+
+          if (!feiraPagaFire->visible)
+            break;
+
+          if (feiraPagaFire->y > DisplayController.getViewPortHeight()) {
+
+            feiraPagaFireActive = false;
+            feiraPagaFire->visible = false;
+            feiraPagaFire->moveTo(-100, -100);
+
+            break;
+          }
+        }
+      }
+
       ////////////////////////////////////////////////////////
 
       updateStars();
@@ -1531,6 +1607,24 @@ struct GameScene : public Scene {
       outerExplosionTimer = currentUpdateCount;
 
       outer->setFrame(1);
+    }
+
+    // ---------- FEIRAPAGA FIRE vs PLAYER ----------
+    if ((typeA == TYPE_FEIRAPAGA_FIRE && typeB == TYPE_PLAYER) || (typeB == TYPE_FEIRAPAGA_FIRE && typeA == TYPE_PLAYER)) {
+
+      if (!playerExploding && playerLifeCount == 0) {
+        playerExploding = true;
+        playerExplosionFrame = 1;
+        playerExplosionTimer = currentUpdateCount;
+      } else {
+        playerLifeCount--;
+      }
+
+      feiraPagaFireActive = false;
+      feiraPagaFire->visible = false;
+      feiraPagaFire->moveTo(-100, -100);
+
+      return;
     }
 
 
