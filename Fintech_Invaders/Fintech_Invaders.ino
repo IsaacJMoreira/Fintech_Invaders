@@ -40,12 +40,12 @@ int PLAYER_AMO_COUNT = 10;
 #define PLAYER_MAX_AMO_ABSOLUTE 500  //FOR PHASE 2
 int playerLifeCount = 2;
 
-#define PEGUE_PAG_RESPAWN_INTERVAL 100
+#define PEGUE_PAG_RESPAWN_INTERVAL 200
 #define PEGUE_PAGUE_KILL_HITS 5
-#define FEIRAPAGA_RESPAWN_INTERVAL 300
+#define FEIRAPAGA_RESPAWN_INTERVAL 100
 #define FEIRAPAGA_KILL_HITS 7
 #define OUTER_KILL_HITS 1
-#define OUTER_RESPAWN_INTERVAL 500
+#define OUTER_RESPAWN_INTERVAL 300
 
 enum GameState {
   INTRO_SCREEN,
@@ -1050,7 +1050,7 @@ struct GameScene : public Scene {
 
       if (!gameOver) {
         if (!gameOver) MISSION_TIME++;
-        SCORE++;
+        //SCORE++;
         SCREEN_SPEED += 0.05;
         PLAYER_FIRE_SPEED = PLAYER_FIRE_SPEED + 0.0055f >= PLAYER_FIRE_MAX_SPEED ? PLAYER_FIRE_MAX_SPEED : PLAYER_FIRE_SPEED + 0.0055f;
         //if (SCORE % 10 == 0 && PLAYER_AMO_COUNT < PLAYER_MAX_AMO_AUTO) {
@@ -1701,8 +1701,8 @@ struct GameScene : public Scene {
 
       if (outerHits >= OUTER_KILL_HITS) {
 
-        SCORE += 50;             // stronger reward
-        PLAYER_AMO_COUNT += 15;  // bigger reward
+        SCORE += 5;             // stronger reward
+        PLAYER_AMO_COUNT += 2;  // bigger reward
 
         outerExploding = true;
         outerExplosionFrame = 0;
