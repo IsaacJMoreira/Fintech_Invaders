@@ -239,6 +239,10 @@ struct IntroScene : public Scene {
 
     canvas.clear();
     canvas.drawBitmap(0, 0, &FINTECH_INVADERS);
+    //canvas.setPenColor(Color::BrightYellow);
+    //canvas.selectFont(&fabgl::FONT_4x6);
+    //canvas.setPenColor(Color::BrightGreen);
+    //canvas.drawText(180, 52, "POR ISAAC MOREIRA");
 
     // 🔥 DRAW HIGH SCORE
     canvas.setBrushColor(Color::Blue);
@@ -296,7 +300,7 @@ struct IntroScene : public Scene {
 
         canvas.setPenColor(Color::BrightRed);
 
-        canvas.drawText(12, 192, "PRESSIONE [P] PARA PULAR INTRO");
+        canvas.drawText(10, 192, "PRESSIONE [P] PARA PULAR INTRO");
       }
 
       return;
@@ -317,7 +321,7 @@ struct IntroScene : public Scene {
     // =========================================================
     if (phase == INTRO_ATTACK) {
 
-      if (elapsed >= 2000) {
+      if (elapsed >= 20000) {
 
         phase = INTRO_INVITE;
         phaseStartTime = millis();
@@ -337,14 +341,14 @@ struct IntroScene : public Scene {
         canvas.drawText(181, 136, "GARANTA O FUTURO DA INSTITUICAO!");
         //canvas.drawText(181, 143, "");
         canvas.drawText(181, 150, "NAO VAI SER FACIL. HAVERA PEDRAS");
-        canvas.drawText(181, 157, "NO SEU CAMINHO E O INIMIGO E VELOZ.");
-        canvas.drawText(181, 164, "MAS USANDO BEM OS RECURSOS E");
-        canvas.drawText(181, 171, "POUPANDO, VOCE NOS LEVARA LONGE!");
-        canvas.drawText(181, 178, "CONTAMOS COM VOCE!");
+        canvas.drawText(181, 157, "NO SEU CAMINHO E NOSSA NAVE ESTA");
+        canvas.drawText(181, 164, "UM POUCO ULTRAPASSADA, MAS ESTA-");
+        canvas.drawText(181, 171, "MOS CONTANDO COM VOCE PARA NOS");
+        canvas.drawText(181, 178, "LEVAR O MAIS LONGE POSSIVEL!");
 
         canvas.setPenColor(Color::BrightRed);
 
-        canvas.drawText(192, 192, "PRESSIONE [P] PARA PULAR INTRO");
+        canvas.drawText(190, 192, "PRESSIONE [P] PARA PULAR INTRO");
       }
 
       return;
@@ -356,7 +360,7 @@ struct IntroScene : public Scene {
     // =========================================================
     if (phase == INTRO_INVITE) {
 
-      if (elapsed >= 2000) {
+      if (elapsed >= 20000) {
 
         phase = INTRO_INSTRUCTIONS;
         phaseStartTime = millis();
@@ -394,7 +398,7 @@ struct IntroScene : public Scene {
     // =========================================================
     if (phase == INTRO_INSTRUCTIONS) {
 
-      if (elapsed >= 5000) {
+      if (elapsed >= 10000) {
 
         gameState = IN_GAME;
         stop();
@@ -1414,7 +1418,7 @@ struct GameScene : public Scene {
         else if (dx < -maxStep) dx = -maxStep;
 
         feiraPaga->x += dx;
-        feiraPaga->y += 1;//MAKE STATIONARY?
+        feiraPaga->y += 1;  //MAKE STATIONARY?
 
         // ---------- FEIRAPAGA SHOOT ----------
         if (!feiraPagaFireActive) {
