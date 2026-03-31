@@ -110,13 +110,19 @@ struct InputNameScene : public Scene {
     canvas.clear();
     canvas.drawBitmap(0, 0, &ASTRONAUT);  // 🔥 FIRST STORY SCREEN
     canvas.setBrushColor(Color::Black);
-    canvas.fillRectangle(187, 93, 318, 115);
+    canvas.fillRectangle(187, 93, 318, 115 + 30);
     canvas.setPenColor(Color::BrightYellow);
     canvas.selectFont(&fabgl::FONT_8x14);
     canvas.drawText(190, 94, "FINTECH INVADERS");
     canvas.selectFont(&fabgl::FONT_4x6);
     //canvas.setPenColor(Color::BrightGreen);
     canvas.drawText(249, 108, "POR ISAAC MOREIRA");
+    canvas.setPenColor(Color::BrightCyan);
+    canvas.drawText(190, 114, "TESTERS:");
+    canvas.drawText(249, 120, "GABRIEL OLIMPIO");
+    canvas.drawText(249, 126, "MURILO RAMOS");
+    canvas.drawText(190, 132, "CONSULTORIA:");
+    canvas.drawText(249, 138, "FABI SCHUMACHER");
     canvas.drawText(249, 194, "V1.0 (01/04/2026)");
     //canvas.drawText(1, 7, "'THOSE WHO CAN IMAGINE ANYTHING,");
     //canvas.drawText(1, 7, "CAN CREATE THE IMPOSSIBLE' - ALAN TURING");
@@ -187,7 +193,7 @@ struct InputNameScene : public Scene {
     canvas.selectFont(&fabgl::FONT_4x6);
     canvas.setPenColor(Color::BrightCyan);
     ///////////////////////////////////////////////////////////////////<<<<
-    canvas.drawTextFmt(2, 174, "VOCE CHEGOU LONGE! SEU SCORE: %05d", SCORE);
+    canvas.drawTextFmt(2, 174, "VOCE CHEGOU MAIS LONGE! SEU SCORE: %05d", SCORE);
 
     canvas.setPenColor(Color::BrightYellow);
     canvas.drawText(2, 181, "DIGITE SEU NOME + [ENTER] PARA CONFIRMAR:");
@@ -250,7 +256,7 @@ struct IntroScene : public Scene {
     canvas.selectFont(&fabgl::FONT_4x6);
     canvas.setPenColor(Color::BrightCyan);
 
-    canvas.drawText(2, 174, "MELHOR SCORE");
+    canvas.drawText(2, 174, "MELHOR SCORE:");
 
     canvas.setPenColor(Color::BrightYellow);
     canvas.drawTextFmt(2, 183, "%s | %05d", HIGH_SCORE_NAME, HIGH_SCORE);
@@ -343,8 +349,8 @@ struct IntroScene : public Scene {
         canvas.drawText(181, 150, "NAO VAI SER FACIL. HAVERA PEDRAS");
         canvas.drawText(181, 157, "NO CAMINHO E NOSSA NAVE ACELERA");
         canvas.drawText(181, 164, "UM POUCO DEVAGAR, MAS ESTAMOS CON-");
-        canvas.drawText(181, 171, "TANDO COM VOCE PARA NOS LEVAR MAIS");
-        canvas.drawText(181, 178, "LONGE POSSIVEL!");
+        canvas.drawText(181, 171, "TANDO COM VOCE PARA NOS LEVAR O");
+        canvas.drawText(181, 178, "MAIS LONGE POSSIVEL!");
 
         canvas.setPenColor(Color::BrightRed);
 
@@ -1127,7 +1133,7 @@ struct GameScene : public Scene {
 
         canvas.selectFont(&fabgl::FONT_8x14);
         canvas.setPenColor(Color::Red);
-        canvas.drawText(50, 174, "GAME OVER");
+        canvas.drawText(230, 130, "GAME OVER");
 
         unsigned long elapsed = millis() - gameOverStartTime;
 
