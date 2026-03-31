@@ -16,16 +16,16 @@ int SCORE = 0;
 float SCREEN_SPEED = 0;
 int MISSION_TIME = 0;
 
-#define PLAY_AREA_LEFT 79
-#define PLAY_AREA_RIGHT 239
-#define PLAYER_AREA_LANES 5
+#define PLAY_AREA_LEFT 0
+#define PLAY_AREA_RIGHT 224
+#define PLAYER_AREA_LANES 7
 
 #define STAR0_COUNT 10
 #define STAR1_COUNT 7
 #define STAR2_COUNT 3
 
 float ASTEROID_SPEED = 2;
-#define ASTEROID_COUNT 5
+#define ASTEROID_COUNT 7
 #define EXPLOSION_FRAMES 4
 
 float STAR_LAYER3_SPEED = 0.1;
@@ -41,11 +41,11 @@ int PLAYER_AMO_COUNT = 10;
 int playerLifeCount = 2;
 
 #define PEGUE_PAG_RESPAWN_INTERVAL 200
-#define PEGUE_PAGUE_KILL_HITS 5
-#define FEIRAPAGA_RESPAWN_INTERVAL 100
-#define FEIRAPAGA_KILL_HITS 7
+#define PEGUE_PAGUE_KILL_HITS 4
+#define FEIRAPAGA_RESPAWN_INTERVAL 400
+#define FEIRAPAGA_KILL_HITS 3
 #define OUTER_KILL_HITS 1
-#define OUTER_RESPAWN_INTERVAL 300
+#define OUTER_RESPAWN_INTERVAL 200
 
 enum GameState {
   INTRO_SCREEN,
@@ -341,10 +341,10 @@ struct IntroScene : public Scene {
         canvas.drawText(181, 136, "GARANTA O FUTURO DA INSTITUICAO!");
         //canvas.drawText(181, 143, "");
         canvas.drawText(181, 150, "NAO VAI SER FACIL. HAVERA PEDRAS");
-        canvas.drawText(181, 157, "NO SEU CAMINHO E NOSSA NAVE ESTA");
-        canvas.drawText(181, 164, "UM POUCO ULTRAPASSADA, MAS ESTA-");
-        canvas.drawText(181, 171, "MOS CONTANDO COM VOCE PARA NOS");
-        canvas.drawText(181, 178, "LEVAR O MAIS LONGE POSSIVEL!");
+        canvas.drawText(181, 157, "NO CAMINHO E NOSSA NAVE ACELERA");
+        canvas.drawText(181, 164, "UM POUCO DEVAGAR, MAS ESTAMOS CON-");
+        canvas.drawText(181, 171, "TANDO COM VOCE PARA NOS LEVAR MAIS");
+        canvas.drawText(181, 178, "LONGE POSSIVEL!");
 
         canvas.setPenColor(Color::BrightRed);
 
@@ -453,12 +453,14 @@ struct GameScene : public Scene {
     &sprites[24],
     &sprites[25],
     &sprites[26],
-    &sprites[27]
+    &sprites[27],
+    &sprites[28],
+    &sprites[29],
   };
 
-  fabgl::Sprite* peguePague = &sprites[28];
+  fabgl::Sprite* peguePague = &sprites[30];
 
-  fabgl::Sprite* feiraPaga = &sprites[29];
+  fabgl::Sprite* feiraPaga = &sprites[31];
 
   bool peguePagueExploding = false;
   int peguePagueExplosionFrame = 0;
@@ -509,7 +511,7 @@ struct GameScene : public Scene {
   int gameOverTime = 0;
   bool gameOver = false;
 
-  fabgl::Sprite* outer = &sprites[30];
+  fabgl::Sprite* outer = &sprites[32];
 
   bool outerActive = false;
   bool outerExploding = false;
@@ -524,7 +526,7 @@ struct GameScene : public Scene {
 
   float outerX = 0;
 
-  fabgl::Sprite* feiraPagaFire = &sprites[31];
+  fabgl::Sprite* feiraPagaFire = &sprites[33];
 
   bool feiraPagaFireActive = false;
   float feiraPagaFireSpeed = 2;
@@ -543,7 +545,7 @@ struct GameScene : public Scene {
 
     int dots = width * height * 0.05;
 
-    canvas.drawBitmap(PLAY_AREA_LEFT + 1, 0, &STARFIELD);
+    canvas.drawBitmap(PLAY_AREA_LEFT, 0, &STARFIELD);
 
     for (int i = 0; i < dots; i++) {
 
@@ -551,7 +553,7 @@ struct GameScene : public Scene {
 
       canvas.setPenColor(color ? (color == 1 ? Color::White : Color::BrightBlack) : Color::BrightBlack);
 
-      int x = random(PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - 1);
+      int x = random(PLAY_AREA_LEFT, PLAY_AREA_RIGHT - 1);
       int y = random(0, height);
 
       canvas.setPixel(x, y);
@@ -566,7 +568,7 @@ struct GameScene : public Scene {
 
       sprites[index].addBitmap(&starBMP0);
 
-      sprites[index].moveTo(random(PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - 3),
+      sprites[index].moveTo(random(PLAY_AREA_LEFT, PLAY_AREA_RIGHT - 3),
                             random(0, DisplayController.getViewPortHeight()));
 
       starY[index] = sprites[index].y;
@@ -580,7 +582,7 @@ struct GameScene : public Scene {
 
       sprites[index].addBitmap(&starBMP1);
 
-      sprites[index].moveTo(random(PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - 5),
+      sprites[index].moveTo(random(PLAY_AREA_LEFT, PLAY_AREA_RIGHT - 5),
                             random(0, DisplayController.getViewPortHeight()));
 
       starY[index] = sprites[index].y;
@@ -594,7 +596,7 @@ struct GameScene : public Scene {
 
       sprites[index].addBitmap(&starBMP2);
 
-      sprites[index].moveTo(random(PLAY_AREA_LEFT + 1, PLAY_AREA_RIGHT - 7),
+      sprites[index].moveTo(random(PLAY_AREA_LEFT, PLAY_AREA_RIGHT - 7),
                             random(0, DisplayController.getViewPortHeight()));
 
       starY[index] = sprites[index].y;
@@ -630,7 +632,7 @@ struct GameScene : public Scene {
 
         sprites[i].y = 0;
 
-        sprites[i].x = random(PLAY_AREA_LEFT + 1,
+        sprites[i].x = random(PLAY_AREA_LEFT,
                               PLAY_AREA_RIGHT - sprites[i].getWidth());
       }
 
@@ -721,7 +723,7 @@ struct GameScene : public Scene {
 
     peguePague->moveTo(-100, -100);
 
-    spriteType[28] = TYPE_PEGUEPAGUE;
+    spriteType[30] = TYPE_PEGUEPAGUE;
 
     addSprite(peguePague);
 
@@ -734,7 +736,7 @@ struct GameScene : public Scene {
     feiraPagaFire->visible = false;
     feiraPagaFire->moveTo(-100, -100);
 
-    spriteType[31] = TYPE_FEIRAPAGA_FIRE;
+    spriteType[33] = TYPE_FEIRAPAGA_FIRE;
 
     addSprite(feiraPagaFire);
 
@@ -746,7 +748,7 @@ struct GameScene : public Scene {
 
     feiraPaga->moveTo(-100, -100);
 
-    spriteType[29] = TYPE_FEIRAPAGA;
+    spriteType[31] = TYPE_FEIRAPAGA;
 
     addSprite(feiraPaga);
 
@@ -763,7 +765,7 @@ struct GameScene : public Scene {
 
     outer->moveTo(-100, -100);
 
-    spriteType[30] = TYPE_OUTER;
+    spriteType[32] = TYPE_OUTER;
 
     addSprite(outer);
 
@@ -772,13 +774,11 @@ struct GameScene : public Scene {
 
     canvas.setBrushColor(Color::White);
 
-    canvas.fillRectangle(0, 0, PLAY_AREA_LEFT, DisplayController.getViewPortHeight());
+    //canvas.fillRectangle(0, 0, PLAY_AREA_LEFT, DisplayController.getViewPortHeight());
 
     canvas.fillRectangle(PLAY_AREA_RIGHT, 0,
                          DisplayController.getViewPortWidth(),
                          DisplayController.getViewPortHeight());
-
-    canvas.drawBitmap(1, 1, &CAIXA);
 
     generateFarStars();
 
@@ -808,7 +808,7 @@ struct GameScene : public Scene {
 
     auto keyboard = PS2Controller.keyboard();
 
-    if ((updateCount % 4) == 0 && !gameOver) {
+    if ((updateCount % 10) == 0 && !gameOver) {
       ///////////////////////////////////////////////////////////////////////
       //////////////////////////////// SCORE ////////////////////////////////
       ///////////////////////////////////////////////////////////////////////
@@ -864,7 +864,7 @@ struct GameScene : public Scene {
       canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 33, 318, 39);
       canvas.selectFont(&fabgl::FONT_4x6);
       canvas.setPenColor(Color::BrightCyan);
-      canvas.drawText(PLAY_AREA_RIGHT + 2, 34, "MINICAO");
+      canvas.drawText(PLAY_AREA_RIGHT + 2, 34, "MUNICAO");
       //canvas.setPenColor(Color::Yellow);
       canvas.drawTextFmt(297, 34, "%05d", PLAYER_AMO_COUNT);  //JUST FOR SHOW
 
@@ -899,6 +899,51 @@ struct GameScene : public Scene {
       canvas.drawText(PLAY_AREA_RIGHT + 2, 50, "VEL.NAVE");
       //canvas.setPenColor(Color::Yellow);
       canvas.drawTextFmt(293, 50, "%06d", (int)(SCREEN_SPEED * 100));  //JUST FOR SHOW
+
+
+
+      ///////////////////////////////////////////////////////////////////////
+      ////////////////////////////////  RADAR ///////////////////////////////
+      ///////////////////////////////////////////////////////////////////////
+      canvas.setBrushColor(Color::Black);
+      canvas.fillRectangle(PLAY_AREA_RIGHT + 2, 57, 318, 197 - 16 - 3 - 32);
+      canvas.drawBitmap(PLAY_AREA_RIGHT + 10, 197 - 16 - 32, &bitmap3);
+
+      canvas.setBrushColor(Color::Black);
+      canvas.fillRectangle(PLAY_AREA_RIGHT + 32 - 2, 197 - 16 - 32 + 2, PLAY_AREA_RIGHT + 32 + 20 - 4, 197 - 16 - 32 + 10 + 2);
+      canvas.selectFont(&fabgl::FONT_8x8);
+      canvas.drawTextFmt(PLAY_AREA_RIGHT + 32 + 2 - 2, 197 - 16 - 32 + 2 + 2, "X%01d", playerLifeCount + 1);
+      canvas.drawBitmap(PLAY_AREA_RIGHT + 10, 197 - 16 - 10, &CAIXA);
+
+      canvas.selectFont(&fabgl::FONT_4x6);
+      canvas.setPenColor(Color::BrightGreen);
+      canvas.drawText(PLAY_AREA_RIGHT + 2, 58, "RADAR:");
+      if (peguePagueActive || feiraPagaActive || outerActive) {
+        canvas.setPenColor(Color::Red);
+        canvas.drawText(PLAY_AREA_RIGHT + 30, 58, "AMEACA DETECTADA");
+      }
+      canvas.setPenColor(Color::BrightGreen);
+      if (peguePagueActive) {  //SE PEGUEPAGUE DETECTADO
+        canvas.drawBitmap(PLAY_AREA_RIGHT + 4, 70, &PEGUEEPAGUE_0);
+        canvas.drawText(PLAY_AREA_RIGHT + 24, 70,    "PEGUE E PAGUE");
+        canvas.drawTextFmt(PLAY_AREA_RIGHT + 24, 76, "DANO: %03d%%", (int)(peguePagueHits * 100/PEGUE_PAGUE_KILL_HITS));
+        canvas.drawText(PLAY_AREA_RIGHT + 4 , 84 + 1,    "----------------------");
+      }
+      if (outerActive) {  //SE OUTER DETECTADO
+        canvas.drawBitmap(PLAY_AREA_RIGHT + 4, 86 + 4, &OUTER_0);
+        canvas.drawText(PLAY_AREA_RIGHT + 24, 86 + 4, "OUTER");
+        canvas.drawText(PLAY_AREA_RIGHT + 24, 92 + 4, "DANO: 000%");
+        canvas.drawText(PLAY_AREA_RIGHT + 4 , 100 + 4 + 1,    "----------------------");
+      }
+      if (feiraPagaActive) {  //SE FEIRAPAGA DETECTADO
+        canvas.drawBitmap(PLAY_AREA_RIGHT + 4, 102 + 8, &FEIRAPAGA_0);
+        canvas.drawText(PLAY_AREA_RIGHT + 24, 102 + 8, "FEIRA PAGA");
+        canvas.drawTextFmt(PLAY_AREA_RIGHT + 24, 108 + 8, "DANO: %03d%%", (int)(feiraPagaHits * 100/FEIRAPAGA_KILL_HITS));
+        canvas.drawText(PLAY_AREA_RIGHT + 4, 118 + 8 + 1,    "----------------------");
+      }
+
+      //canvas.setPenColor(Color::Yellow);
+      //canvas.drawTextFmt(293, 50, "%06d", (int)(SCREEN_SPEED * 100));  //JUST FOR SHOW
     }
 
     ////////////////////////////////////////////////////////
@@ -978,8 +1023,8 @@ struct GameScene : public Scene {
       player->x += direction;
 
       player->x = iclamp(player->x,
-                         PLAY_AREA_LEFT + 1,
-                         PLAY_AREA_RIGHT - player->getWidth() + 1);
+                         PLAY_AREA_LEFT,
+                         PLAY_AREA_RIGHT - player->getWidth());
 
       updateSpriteAndDetectCollisions(player);
 
@@ -1054,14 +1099,10 @@ struct GameScene : public Scene {
 
       if (!gameOver) {
         if (!gameOver) MISSION_TIME++;
-        //SCORE++;
         SCREEN_SPEED += 0.05;
         PLAYER_FIRE_SPEED = PLAYER_FIRE_SPEED + 0.0055f >= PLAYER_FIRE_MAX_SPEED ? PLAYER_FIRE_MAX_SPEED : PLAYER_FIRE_SPEED + 0.0055f;
-        //if (SCORE % 10 == 0 && PLAYER_AMO_COUNT < PLAYER_MAX_AMO_AUTO) {
-        // PLAYER_AMO_COUNT++;
-        // }
-      }
 
+      }
 
       float speedIncrease = SCREEN_SPEED / 30;
       ASTEROID_SPEED = 1 + speedIncrease;
@@ -1075,21 +1116,18 @@ struct GameScene : public Scene {
         DisplayController.removeSprites();
         canvas.clear();
         canvas.drawBitmap(0, 0, &ASTRONAUT);  // 🔥 FIRST STORY SCREEN
-        //canvas.setBrushColor(Color::Black);
-        //canvas.fillRectangle(187, 93, 318, 115);
+       
         canvas.setPenColor(Color::BrightYellow);
         canvas.selectFont(&fabgl::FONT_8x14);
         canvas.drawText(190, 94, "FINTECH INVADERS");
         canvas.selectFont(&fabgl::FONT_4x6);
-        //canvas.setPenColor(Color::BrightGreen);
+        
         canvas.drawText(249, 108, "POR ISAAC MOREIRA");
         canvas.drawText(249, 194, "V1.0 (01/04/2026)");
 
-        //canvas.setBrushColor(Color::Blue);
-        //canvas.fillRectangle(0, 172, 177, 200);
         canvas.selectFont(&fabgl::FONT_8x14);
         canvas.setPenColor(Color::Red);
-        canvas.drawText(1, 174, "GAME OVER");
+        canvas.drawText(50, 174, "GAME OVER");
 
         unsigned long elapsed = millis() - gameOverStartTime;
 
@@ -1601,8 +1639,8 @@ struct GameScene : public Scene {
       if (!outerActive || outerExploding)
         return;
 
-      if (SCORE >= 50)
-        SCORE -= 50;
+      if (SCORE >= 30)
+        SCORE -= 30;
       else
         SCORE = 0;
 
@@ -1733,8 +1771,8 @@ struct GameScene : public Scene {
 
       if (peguePagueHits >= PEGUE_PAGUE_KILL_HITS) {
 
-        SCORE += 30;
-        PLAYER_AMO_COUNT += 7;
+        SCORE += 20;
+        PLAYER_AMO_COUNT += 5;
 
         peguePagueExploding = true;
         peguePagueExplosionFrame = 0;
@@ -1757,8 +1795,8 @@ struct GameScene : public Scene {
       if (!peguePagueActive || peguePagueExploding)
         return;
 
-      if (SCORE >= 25)
-        SCORE -= 25;
+      if (SCORE >= 40)
+        SCORE -= 40;
       else
         SCORE = 0;
 
@@ -1812,8 +1850,8 @@ struct GameScene : public Scene {
       if (!feiraPagaActive || feiraPagaExploding)
         return;
 
-      if (SCORE >= 30)
-        SCORE -= 30;
+      if (SCORE >= 50)
+        SCORE -= 50;
       else
         SCORE = 0;
 
