@@ -38,7 +38,7 @@ float PLAYER_FIRE_SPEED = 1;
 int PLAYER_AMO_COUNT = 10;
 #define PLAYER_MAX_AMO_AUTO 10       // FOR AUTO
 #define PLAYER_MAX_AMO_ABSOLUTE 500  //FOR PHASE 2
-int playerLifeCount = 2;
+int playerLifeCount = 4;
 
 #define PEGUE_PAG_RESPAWN_INTERVAL 200
 #define PEGUE_PAGUE_KILL_HITS 4
@@ -235,7 +235,7 @@ struct IntroScene : public Scene {
     PLAYER_FIRE_SPEED = 1;
     PLAYER_AMO_COUNT = 10;
     ASTEROID_SPEED = 1;
-    playerLifeCount = 2;
+    playerLifeCount = 4;
 
     canvas.clear();
     canvas.drawBitmap(0, 0, &FINTECH_INVADERS);
@@ -1905,11 +1905,11 @@ void setup() {
 
   // 🔥 FORCE RESET
   HIGH_SCORE = 0;
-  strcpy(HIGH_SCORE_NAME, "PLAYER");
+  strcpy(HIGH_SCORE_NAME, "JOGADOR");
 
   saveHighScore();  // already has commit()
 
-  // loadHighScore(); ❌ not needed after reset
+  //loadHighScore(); //❌ not needed after reset
 }
 
 void loop() {
