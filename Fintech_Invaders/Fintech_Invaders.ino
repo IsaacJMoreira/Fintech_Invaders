@@ -1904,12 +1904,12 @@ void setup() {
   EEPROM.begin(EEPROM_SIZE);
 
   // 🔥 FORCE RESET
-  HIGH_SCORE = 0;
-  strcpy(HIGH_SCORE_NAME, "JOGADOR");
+  //HIGH_SCORE = 0;
+  //strcpy(HIGH_SCORE_NAME, "JOGADOR");
 
-  saveHighScore();  // already has commit()
+  //saveHighScore();  // already has commit()
 
-  //loadHighScore(); //❌ not needed after reset
+  loadHighScore(); //❌ not needed after reset
 }
 
 void loop() {
